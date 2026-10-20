@@ -1,16 +1,22 @@
 <?php
 /**
- * Uninstall script for reCAPTCHA for WooCommerce Block Checkout
+ * Removes plugin options on uninstall, including 1.0.0 (rbc_*) names.
  *
- * @package Recaptcha_Block_Checkout
+ * @package Oli_Checkout_Captcha
  */
 
-// If uninstall not called from WordPress, exit.
-if (!defined('WP_UNINSTALL_PLUGIN')) {
-    exit;
-}
+defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-// Delete plugin options
-delete_option('rbc_site_key');
-delete_option('rbc_secret_key');
-delete_option('rbc_theme');
+$oli_cc_options = array(
+	'oli_cc_site_key',
+	'oli_cc_secret_key',
+	'oli_cc_theme',
+	'rbc_site_key',
+	'rbc_secret_key',
+	'rbc_theme',
+);
+
+foreach ( $oli_cc_options as $oli_cc_option ) {
+	delete_option( $oli_cc_option );
+	delete_site_option( $oli_cc_option );
+}
