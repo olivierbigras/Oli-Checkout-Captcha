@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.1.1 - 2026-10-21
+
+### Fixed
+
+- Restored a legacy bootstrap file (`recaptcha-block-checkout.php`) without a plugin header so in-place updates that keep the previous folder stay active.
+- Rewrites only this plugin's entry in `active_plugins` and `active_sitewide_plugins`, reading the raw option value rather than the filtered value.
+- Runs `rbc_*` to `olic_*` option migration on `plugins_loaded` with an `olic_db_version` marker, without requiring reactivation.
+
 ## 1.1.0 - 2026-10-21
 
 ### Changed

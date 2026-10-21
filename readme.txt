@@ -4,7 +4,7 @@ Tags: recaptcha, woocommerce, checkout, block checkout, spam protection
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,7 +48,7 @@ This plugin is specifically designed for the WooCommerce Block Checkout, which u
 4. Enter your Google reCAPTCHA v2 Site Key and Secret Key.
 5. Save changes.
 
-Existing sites that used the previous plugin slug or `rbc_` options are migrated automatically to the `olic_` options on activation and on `plugins_loaded`.
+Existing sites that used the previous plugin slug or `rbc_` options are migrated automatically to the `olic_` options on `plugins_loaded`, without requiring a reactivation. In-place updates that keep the previous folder name continue to load through a legacy bootstrap file.
 
 == Frequently Asked Questions ==
 
@@ -110,6 +110,11 @@ You are responsible for mentioning Google reCAPTCHA in your own site privacy pol
 
 == Changelog ==
 
+= 1.1.1 =
+* Kept a legacy bootstrap file so in-place updates from recaptcha-block-checkout.php stay active.
+* Rewrites only the stored active plugin path for this plugin, using the raw option value.
+* Migrates rbc_ options to olic_ on plugins_loaded with a version marker, without reactivation.
+
 = 1.1.0 =
 * Renamed the plugin to Oli Checkout Captcha (slug and text domain: oli-checkout-captcha).
 * Prefixed functions, options, and classes with olic (4+ characters).
@@ -128,6 +133,9 @@ You are responsible for mentioning Google reCAPTCHA in your own site privacy pol
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Keeps checkout protection active during in-place updates from the previous main file and migrates settings without reactivation.
 
 = 1.1.0 =
 Renames the plugin to Oli Checkout Captcha and migrates existing settings. Update recommended before submitting to WordPress.org.

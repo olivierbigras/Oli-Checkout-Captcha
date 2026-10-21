@@ -1,0 +1,29 @@
+{
+  "name": "olivierbigras/oli-checkout-captcha",
+  "description": "Adds Google reCAPTCHA v2 protection to WooCommerce block-based checkout.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://github.com/olivierbigras/Oli-Checkout-Captcha",
+  "support": {
+    "issues": "https://github.com/olivierbigras/Oli-Checkout-Captcha/issues",
+    "source": "https://github.com/olivierbigras/Oli-Checkout-Captcha"
+  },
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "phpunit/phpunit": "^9.6",
+    "wp-coding-standards/wpcs": "^3.1"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "sort-packages": true
+  },
+  "scripts": {
+    "phpcs": "phpcs",
+    "test": "phpunit"
+  }
+}

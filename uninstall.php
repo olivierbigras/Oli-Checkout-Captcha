@@ -13,6 +13,7 @@ $olic_options = array(
 	'olic_site_key',
 	'olic_secret_key',
 	'olic_theme',
+	'olic_db_version',
 	'rbc_site_key',
 	'rbc_secret_key',
 	'rbc_theme',

@@ -13,20 +13,23 @@ WordPress plugin that adds Google reCAPTCHA v2 ("I'm not a robot") to the WooCom
 3. Enter Google reCAPTCHA v2 Site Key and Secret Key.
 4. Save changes.
 
-Existing `rbc_*` options from earlier versions are migrated automatically to `olic_*`.
+Existing `rbc_*` options from earlier versions are migrated automatically to `olic_*` on `plugins_loaded`. In-place updates that keep the previous folder name stay active through `recaptcha-block-checkout.php`.
 
 ## Development
 
 ```bash
 php -l oli-checkout-captcha.php
+php -l recaptcha-block-checkout.php
+php -l includes/olic-upgrade.php
 php -l includes/class-olic-checkout-captcha.php
 php -l uninstall.php
 ```
 
-If [PHPCS](https://github.com/PHPCSStandards/PHP_CodeSniffer) and [WPCS](https://github.com/WordPress/WordPress-Coding-Standards) are installed:
+If [Composer](https://getcomposer.org/) dependencies are installed:
 
 ```bash
-phpcs
+composer phpcs
+composer test
 ```
 
 ## License
