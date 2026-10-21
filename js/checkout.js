@@ -1,175 +1,173 @@
-(function() {
-    'use strict';
+(function () {
+	'use strict';
 
-    var rendered = false;
-    var widgetId = null;
-    var currentToken = '';
+	var rendered = false;
+	var widgetId = null;
 
-    // Callback when reCAPTCHA is solved
-    window.rbcRecaptchaCallback = function(token) {
-        currentToken = token;
-        updateStoreData(token);
-        // Also store in hidden input as fallback
-        var hiddenInput = document.getElementById('rbc-token');
-        if (hiddenInput) hiddenInput.value = token;
-    };
+	function getConfig() {
+		return typeof olicConfig !== 'undefined' ? olicConfig : null;
+	}
 
-    // Callback when reCAPTCHA expires
-    window.rbcRecaptchaExpired = function() {
-        currentToken = '';
-        updateStoreData('');
-    };
+	function getNamespace() {
+		var config = getConfig();
+		return config && config.namespace ? config.namespace : 'oli-checkout-captcha';
+	}
 
-    // Callback when reCAPTCHA errors
-    window.rbcRecaptchaError = function() {
-        currentToken = '';
-        updateStoreData('');
-    };
+	window.olicRecaptchaCallback = function (token) {
+		updateStoreData(token);
+	};
 
-    // Update WooCommerce Store API data
-    function updateStoreData(token) {
-        try {
-            if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
-                var dispatch = wp.data.dispatch('wc/store/checkout');
-                if (dispatch && dispatch.__internalSetExtensionData) {
-                    dispatch.__internalSetExtensionData('recaptcha-block-checkout', { token: token });
-                }
-            }
-        } catch (e) {
-            console.error('reCAPTCHA Block Checkout: Failed to update store data', e);
-        }
-    }
+	window.olicRecaptchaExpired = function () {
+		updateStoreData('');
+	};
 
-    // Create and render the reCAPTCHA widget
-    function renderRecaptcha() {
-        if (rendered) return;
-        if (typeof grecaptcha === 'undefined' || typeof grecaptcha.render !== 'function') return;
-        if (typeof rbcConfig === 'undefined') return;
+	window.olicRecaptchaError = function () {
+		updateStoreData('');
+	};
 
-        // Find the place to insert reCAPTCHA (after payment methods)
-        var targetSelectors = [
-            '.wc-block-components-checkout-step--payment-methods',
-            '.wp-block-woocommerce-checkout-payment-block',
-            '.wc-block-checkout__payment-method'
-        ];
+	function updateStoreData(token) {
+		try {
+			if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+				var dispatch = wp.data.dispatch('wc/store/checkout');
+				if (dispatch && dispatch.__internalSetExtensionData) {
+					dispatch.__internalSetExtensionData(getNamespace(), { token: token });
+				}
+			}
+		} catch (e) {
+			return;
+		}
+	}
 
-        var target = null;
-        for (var i = 0; i < targetSelectors.length; i++) {
-            target = document.querySelector(targetSelectors[i]);
-            if (target) break;
-        }
+	function renderRecaptcha() {
+		if (rendered) {
+			return;
+		}
 
-        if (!target) return;
+		if (typeof grecaptcha === 'undefined' || typeof grecaptcha.render !== 'function') {
+			return;
+		}
 
-        // Check if container already exists
-        var container = document.getElementById('rbc-recaptcha-container');
-        if (!container) {
-            // Create container
-            container = document.createElement('div');
-            container.id = 'rbc-recaptcha-container';
-            container.style.cssText = 'margin: 20px 0; padding: 15px 0;';
-            
-            // Create inner div for reCAPTCHA
-            var recaptchaDiv = document.createElement('div');
-            recaptchaDiv.id = 'rbc-recaptcha-widget';
-            container.appendChild(recaptchaDiv);
-            
-            // Insert after payment block
-            target.parentNode.insertBefore(container, target.nextSibling);
-        }
+		var config = getConfig();
+		if (!config || !config.siteKey) {
+			return;
+		}
 
-        var widget = document.getElementById('rbc-recaptcha-widget');
-        if (!widget) return;
+		var targetSelectors = [
+			'.wc-block-components-checkout-step--payment-methods',
+			'.wp-block-woocommerce-checkout-payment-block',
+			'.wc-block-checkout__payment-method'
+		];
 
-        // Check if already has iframe (already rendered)
-        if (widget.querySelector('iframe')) {
-            rendered = true;
-            return;
-        }
+		var target = null;
+		var i;
+		for (i = 0; i < targetSelectors.length; i++) {
+			target = document.querySelector(targetSelectors[i]);
+			if (target) {
+				break;
+			}
+		}
 
-        try {
-            widgetId = grecaptcha.render(widget, {
-                sitekey: rbcConfig.siteKey,
-                theme: rbcConfig.theme || 'light',
-                callback: 'rbcRecaptchaCallback',
-                'expired-callback': 'rbcRecaptchaExpired',
-                'error-callback': 'rbcRecaptchaError'
-            });
-            rendered = true;
-        } catch (e) {
-            if (e.message && e.message.indexOf('already been rendered') > -1) {
-                rendered = true;
-            } else {
-                console.error('reCAPTCHA Block Checkout: Render failed', e);
-            }
-        }
-    }
+		if (!target) {
+			return;
+		}
 
-    // Called when Google reCAPTCHA API loads
-    window.rbcRecaptchaOnLoad = function() {
-        // Wait a bit for React to hydrate checkout blocks
-        setTimeout(function() {
-            renderRecaptcha();
-        }, 500);
-    };
+		var container = document.getElementById('olic-recaptcha-container');
+		if (!container) {
+			container = document.createElement('div');
+			container.id = 'olic-recaptcha-container';
+			container.className = 'olic-recaptcha-container';
 
-    // Initialize
-    function init() {
-        // Multiple strategies to ensure reCAPTCHA renders
+			var recaptchaDiv = document.createElement('div');
+			recaptchaDiv.id = 'olic-recaptcha-widget';
+			container.appendChild(recaptchaDiv);
 
-        // 1. Polling with delays
-        var attempts = 0;
-        var maxAttempts = 30;
-        
-        function tryRender() {
-            if (rendered || attempts >= maxAttempts) return;
-            attempts++;
-            renderRecaptcha();
-            if (!rendered) {
-                setTimeout(tryRender, 500);
-            }
-        }
+			if (target.parentNode) {
+				target.parentNode.insertBefore(container, target.nextSibling);
+			}
+		}
 
-        // Start after initial delay for React hydration
-        setTimeout(tryRender, 1500);
+		var widget = document.getElementById('olic-recaptcha-widget');
+		if (!widget) {
+			return;
+		}
 
-        // 2. MutationObserver for dynamic content
-        if (typeof MutationObserver !== 'undefined') {
-            var observer = new MutationObserver(function() {
-                if (!rendered) {
-                    renderRecaptcha();
-                }
-                if (rendered) {
-                    observer.disconnect();
-                }
-            });
+		if (widget.querySelector('iframe')) {
+			rendered = true;
+			return;
+		}
 
-            var checkoutBlock = document.querySelector('.wp-block-woocommerce-checkout, .wc-block-checkout');
-            if (checkoutBlock) {
-                observer.observe(checkoutBlock, { childList: true, subtree: true });
-            } else {
-                // Observe body until checkout block appears
-                observer.observe(document.body, { childList: true, subtree: true });
-            }
-        }
+		try {
+			widgetId = grecaptcha.render(widget, {
+				sitekey: config.siteKey,
+				theme: config.theme || 'light',
+				callback: 'olicRecaptchaCallback',
+				'expired-callback': 'olicRecaptchaExpired',
+				'error-callback': 'olicRecaptchaError'
+			});
+			rendered = true;
+		} catch (e) {
+			if (e.message && e.message.indexOf('already been rendered') > -1) {
+				rendered = true;
+			}
+		}
+	}
 
-        // 3. Listen to WooCommerce store changes
-        if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
-            var unsubscribe = wp.data.subscribe(function() {
-                if (!rendered) {
-                    renderRecaptcha();
-                }
-                if (rendered && unsubscribe) {
-                    unsubscribe();
-                }
-            });
-        }
-    }
+	window.olicRecaptchaOnLoad = function () {
+		window.setTimeout(function () {
+			renderRecaptcha();
+		}, 500);
+	};
 
-    // Start when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+	function init() {
+		var attempts = 0;
+		var maxAttempts = 30;
+
+		function tryRender() {
+			if (rendered || attempts >= maxAttempts) {
+				return;
+			}
+			attempts += 1;
+			renderRecaptcha();
+			if (!rendered) {
+				window.setTimeout(tryRender, 500);
+			}
+		}
+
+		window.setTimeout(tryRender, 1500);
+
+		if (typeof MutationObserver !== 'undefined') {
+			var observer = new MutationObserver(function () {
+				if (!rendered) {
+					renderRecaptcha();
+				}
+				if (rendered) {
+					observer.disconnect();
+				}
+			});
+
+			var checkoutBlock = document.querySelector('.wp-block-woocommerce-checkout, .wc-block-checkout');
+			if (checkoutBlock) {
+				observer.observe(checkoutBlock, { childList: true, subtree: true });
+			} else {
+				observer.observe(document.body, { childList: true, subtree: true });
+			}
+		}
+
+		if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
+			var unsubscribe = wp.data.subscribe(function () {
+				if (!rendered) {
+					renderRecaptcha();
+				}
+				if (rendered && unsubscribe) {
+					unsubscribe();
+				}
+			});
+		}
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
 })();
