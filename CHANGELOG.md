@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 2026-10-23
+
+### Modifié
+- readme.txt : « Contributors » limité à bigrat95.
+
 ## 1.1.1 - 2026-10-21
 
 ### Fixed
