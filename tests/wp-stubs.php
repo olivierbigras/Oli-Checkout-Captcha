@@ -560,3 +560,172 @@ if ( ! function_exists( 'delete_transient' ) ) {
 		return true;
 	}
 }
+
+$GLOBALS['olic_test_registered_scripts'] = array();
+$GLOBALS['olic_test_enqueued_scripts']   = array();
+$GLOBALS['olic_test_enqueued_styles']    = array();
+$GLOBALS['olic_test_localized_scripts']  = array();
+$GLOBALS['olic_test_is_checkout']        = false;
+$GLOBALS['olic_test_is_order_received']  = false;
+$GLOBALS['olic_test_is_checkout_pay']    = false;
+$GLOBALS['olic_test_has_blocks']         = array();
+$GLOBALS['olic_test_has_blocks_by_page'] = array();
+$GLOBALS['olic_test_checkout_page_id']   = 0;
+
+if ( ! function_exists( 'wp_register_script' ) ) {
+	/**
+	 * @param string           $handle Script handle.
+	 * @param string           $src    Script URL.
+	 * @param array<int, string> $deps Dependencies.
+	 * @param string|bool|null $ver    Version.
+	 * @param bool|array<string, mixed> $args Footer flag or args.
+	 * @return bool
+	 */
+	function wp_register_script( $handle, $src, $deps = array(), $ver = false, $args = false ) {
+		$GLOBALS['olic_test_registered_scripts'][ $handle ] = array(
+			'src'  => $src,
+			'deps' => $deps,
+			'ver'  => $ver,
+			'args' => $args,
+		);
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_script' ) ) {
+	/**
+	 * @param string           $handle Script handle.
+	 * @param string           $src    Script URL.
+	 * @param array<int, string> $deps Dependencies.
+	 * @param string|bool|null $ver    Version.
+	 * @param bool|array<string, mixed> $args Footer flag or args.
+	 * @return void
+	 */
+	function wp_enqueue_script( $handle, $src = '', $deps = array(), $ver = false, $args = false ) {
+		if ( '' !== $src ) {
+			wp_register_script( $handle, $src, $deps, $ver, $args );
+		}
+
+		$GLOBALS['olic_test_enqueued_scripts'][] = $handle;
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_style' ) ) {
+	/**
+	 * @param string           $handle Style handle.
+	 * @param string           $src    Style URL.
+	 * @param array<int, string> $deps Dependencies.
+	 * @param string|bool|null $ver    Version.
+	 * @param string           $media  Media.
+	 * @return void
+	 */
+	function wp_enqueue_style( $handle, $src = '', $deps = array(), $ver = false, $media = 'all' ) {
+		$GLOBALS['olic_test_enqueued_styles'][ $handle ] = array(
+			'src'   => $src,
+			'deps'  => $deps,
+			'ver'   => $ver,
+			'media' => $media,
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_localize_script' ) ) {
+	/**
+	 * @param string               $handle Script handle.
+	 * @param string               $name   JS object name.
+	 * @param array<string, mixed> $data   Data.
+	 * @return bool
+	 */
+	function wp_localize_script( $handle, $name, $data ) {
+		$GLOBALS['olic_test_localized_scripts'][ $handle ] = array(
+			'name' => $name,
+			'data' => $data,
+		);
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_script_is' ) ) {
+	/**
+	 * @param string $handle Script handle.
+	 * @param string $list   Queue to check.
+	 * @return bool
+	 */
+	function wp_script_is( $handle, $list = 'enqueued' ) {
+		if ( 'registered' === $list ) {
+			return isset( $GLOBALS['olic_test_registered_scripts'][ $handle ] );
+		}
+
+		if ( 'enqueued' === $list ) {
+			return in_array( $handle, $GLOBALS['olic_test_enqueued_scripts'], true );
+		}
+
+		return false;
+	}
+}
+
+if ( ! function_exists( 'is_checkout' ) ) {
+	/**
+	 * @return bool
+	 */
+	function is_checkout() {
+		return ! empty( $GLOBALS['olic_test_is_checkout'] );
+	}
+}
+
+if ( ! function_exists( 'is_order_received_page' ) ) {
+	/**
+	 * @return bool
+	 */
+	function is_order_received_page() {
+		return ! empty( $GLOBALS['olic_test_is_order_received'] );
+	}
+}
+
+if ( ! function_exists( 'is_checkout_pay_page' ) ) {
+	/**
+	 * @return bool
+	 */
+	function is_checkout_pay_page() {
+		return ! empty( $GLOBALS['olic_test_is_checkout_pay'] );
+	}
+}
+
+if ( ! function_exists( 'has_block' ) ) {
+	/**
+	 * @param string     $block_name Block name.
+	 * @param int|object $post       Optional post.
+	 * @return bool
+	 */
+	function has_block( $block_name, $post = null ) {
+		$blocks = isset( $GLOBALS['olic_test_has_blocks'] ) && is_array( $GLOBALS['olic_test_has_blocks'] )
+			? $GLOBALS['olic_test_has_blocks']
+			: array();
+
+		if ( null === $post || 0 === $post ) {
+			return in_array( $block_name, $blocks, true );
+		}
+
+		$page_blocks = isset( $GLOBALS['olic_test_has_blocks_by_page'][ (int) $post ] )
+			? $GLOBALS['olic_test_has_blocks_by_page'][ (int) $post ]
+			: array();
+
+		return in_array( $block_name, $page_blocks, true );
+	}
+}
+
+if ( ! function_exists( 'wc_get_page_id' ) ) {
+	/**
+	 * @param string $page Page slug.
+	 * @return int
+	 */
+	function wc_get_page_id( $page ) {
+		if ( 'checkout' === $page ) {
+			return (int) $GLOBALS['olic_test_checkout_page_id'];
+		}
+
+		return 0;
+	}
+}

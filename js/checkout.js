@@ -35,14 +35,29 @@
 		}
 
 		try {
-			if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
-				var dispatch = wp.data.dispatch('wc/store/checkout');
-				if (dispatch && dispatch.__internalSetExtensionData) {
-					dispatch.__internalSetExtensionData(getNamespace(), { token: token || '' });
-				}
-			}
+			setCheckoutExtensionData(getNamespace(), { token: token || '' });
 		} catch (e) {
 			return;
+		}
+	}
+
+	function setCheckoutExtensionData(namespace, data) {
+		if (typeof wp === 'undefined' || !wp.data || !wp.data.dispatch) {
+			return;
+		}
+
+		var dispatch = wp.data.dispatch('wc/store/checkout');
+		if (!dispatch) {
+			return;
+		}
+
+		if (typeof dispatch.setExtensionData === 'function') {
+			dispatch.setExtensionData(namespace, data);
+			return;
+		}
+
+		if (typeof dispatch.__internalSetExtensionData === 'function') {
+			dispatch.__internalSetExtensionData(namespace, data);
 		}
 	}
 

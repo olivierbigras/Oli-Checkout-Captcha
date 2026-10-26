@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.2.3 - 2026-10-26
+
+### Fixed
+
+- Use WooCommerce's public `setExtensionData` on block checkout, falling back to `__internalSetExtensionData` on older WooCommerce.
+- Declare `wp-data` and `wc-blocks-data-store` as `olic-checkout` dependencies on block checkout only when those handles are registered, so classic checkout still loads without WooCommerce Blocks.
+- Enqueue Cloudflare Turnstile `api.js` with a `null` version so WordPress does not append `?ver=`.
+
+### Changed
+
+- readme.txt now lists four screenshot captions.
+
 ## 1.2.2 - 2026-10-26
 
 ### Fixed

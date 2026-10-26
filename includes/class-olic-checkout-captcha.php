@@ -760,7 +760,7 @@ class Olic_Checkout_Captcha {
 		wp_register_script(
 			'olic-checkout',
 			plugins_url( 'js/checkout.js', OLIC_PLUGIN_FILE ),
-			array( 'jquery' ),
+			$this->get_checkout_script_dependencies(),
 			OLIC_VERSION,
 			true
 		);
@@ -785,7 +785,7 @@ class Olic_Checkout_Captcha {
 				'olic-turnstile',
 				'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=olicCaptchaOnLoad&render=explicit', // phpcs:ignore PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- Documented Turnstile widget script, loaded only on checkout.
 				array( 'olic-checkout' ),
-				OLIC_VERSION,
+				null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Cloudflare Turnstile api.js rejects the WordPress ?ver= query argument.
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -1150,6 +1150,65 @@ class Olic_Checkout_Captcha {
 	 */
 	private function get_rate_limit_window() {
 		return max( 60, absint( $this->get_stored_option( 'olic_rate_limit_window', '900' ) ) );
+	}
+
+	/**
+	 * Script dependencies for checkout.js.
+	 *
+	 * Block checkout uses wp.data and the WooCommerce checkout store.
+	 * Those handles are declared only when registered so classic checkout
+	 * still loads if WooCommerce Blocks is not present.
+	 *
+	 * @since 1.2.3
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_checkout_script_dependencies() {
+		$deps = array( 'jquery' );
+
+		if ( ! $this->is_block_checkout() ) {
+			return $deps;
+		}
+
+		$optional_deps = array( 'wp-data', 'wc-blocks-data-store' );
+		foreach ( $optional_deps as $handle ) {
+			if ( function_exists( 'wp_script_is' ) && wp_script_is( $handle, 'registered' ) ) {
+				$deps[] = $handle;
+			}
+		}
+
+		return $deps;
+	}
+
+	/**
+	 * Whether the current checkout page uses the WooCommerce checkout block.
+	 *
+	 * @since 1.2.3
+	 *
+	 * @return bool
+	 */
+	private function is_block_checkout() {
+		$utils = 'Automattic\\WooCommerce\\Blocks\\Utils\\CartCheckoutUtils';
+		if ( class_exists( $utils ) && is_callable( array( $utils, 'is_checkout_block_default' ) ) && $utils::is_checkout_block_default() ) {
+			return true;
+		}
+
+		if ( ! function_exists( 'has_block' ) ) {
+			return false;
+		}
+
+		if ( has_block( 'woocommerce/checkout' ) ) {
+			return true;
+		}
+
+		if ( function_exists( 'wc_get_page_id' ) ) {
+			$checkout_page_id = wc_get_page_id( 'checkout' );
+			if ( $checkout_page_id > 0 && has_block( 'woocommerce/checkout', $checkout_page_id ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

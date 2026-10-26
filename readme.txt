@@ -4,7 +4,7 @@ Tags: recaptcha, turnstile, woocommerce, checkout, spam
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -149,8 +149,16 @@ You are responsible for mentioning the selected captcha provider in your own sit
 
 1. Settings page
 2. Captcha on checkout
+3. Captcha on the block checkout.
+4. Checkout blocked with "Please complete the captcha verification." when the captcha is not completed.
 
 == Changelog ==
+
+= 1.2.3 =
+* Use WooCommerce's public setExtensionData on block checkout, with a fallback to __internalSetExtensionData on older WooCommerce.
+* Declare wp-data and wc-blocks-data-store as script dependencies on block checkout only when those handles are registered.
+* Enqueue Cloudflare Turnstile api.js without a ?ver= query argument.
+* Document four screenshots in the readme.
 
 = 1.2.2 =
 * Return HTTP 400 (not 500) when captcha verification fails on block / Store API checkout.
@@ -194,6 +202,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.2.3 =
+Uses the public WooCommerce checkout store API, declares block checkout script dependencies only when registered, and loads Turnstile without a version query argument.
 
 = 1.2.2 =
 Returns HTTP 400 instead of 500 when captcha verification fails on the checkout block.
