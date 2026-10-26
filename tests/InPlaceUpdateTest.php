@@ -68,7 +68,7 @@ class InPlaceUpdateTest extends TestCase {
 
 		$this->assertTrue( defined( 'OLIC_PLUGIN_LOADED' ) );
 		$this->assertTrue( defined( 'OLIC_VERSION' ) );
-		$this->assertSame( '1.2.1', OLIC_VERSION );
+		$this->assertSame( '1.2.2', OLIC_VERSION );
 		$this->assertSame(
 			1,
 			substr_count(
@@ -162,13 +162,13 @@ class InPlaceUpdateTest extends TestCase {
 		$this->assertSame( 'legacy-site-key', $GLOBALS['olic_test_options']['olic_site_key'] );
 		$this->assertSame( 'legacy-secret-key', $GLOBALS['olic_test_options']['olic_secret_key'] );
 		$this->assertSame( 'dark', $GLOBALS['olic_test_options']['olic_theme'] );
-		$this->assertSame( '1.2.1', $GLOBALS['olic_test_options']['olic_db_version'] );
+		$this->assertSame( '1.2.2', $GLOBALS['olic_test_options']['olic_db_version'] );
 		$this->assertArrayNotHasKey( 'rbc_site_key', $GLOBALS['olic_test_options'] );
 		$this->assertArrayNotHasKey( 'rbc_secret_key', $GLOBALS['olic_test_options'] );
 		$this->assertArrayNotHasKey( 'rbc_theme', $GLOBALS['olic_test_options'] );
 
 		do_action( 'plugins_loaded' );
-		$this->assertSame( '1.2.1', $GLOBALS['olic_test_options']['olic_db_version'] );
+		$this->assertSame( '1.2.2', $GLOBALS['olic_test_options']['olic_db_version'] );
 		$this->assertTrue( class_exists( 'Olic_Checkout_Captcha', false ) );
 	}
 

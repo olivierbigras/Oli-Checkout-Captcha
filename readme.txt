@@ -4,7 +4,7 @@ Tags: recaptcha, turnstile, woocommerce, checkout, spam
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -152,6 +152,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 
 == Changelog ==
 
+= 1.2.2 =
+* Return HTTP 400 (not 500) when captcha verification fails on block / Store API checkout.
+
 = 1.2.1 =
 * Re-render reCAPTCHA and Turnstile after WooCommerce classic checkout replaces the payment fragment.
 * Reset the captcha token after a classic checkout error so a fresh token can be submitted.
@@ -191,6 +194,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.2.2 =
+Returns HTTP 400 instead of 500 when captcha verification fails on the checkout block.
 
 = 1.2.1 =
 Fixes an empty captcha widget on classic shortcode checkout after WooCommerce refreshes the payment section.

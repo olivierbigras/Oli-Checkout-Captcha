@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.2.2 - 2026-10-26
+
+### Fixed
+
+- Return HTTP 400 via the WooCommerce Store API `RouteException` when captcha verification fails on block checkout, instead of a generic 500.
+
 ## 1.2.1 - 2026-10-26
 
 ### Fixed

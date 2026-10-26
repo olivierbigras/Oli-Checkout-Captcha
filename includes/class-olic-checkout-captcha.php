@@ -920,7 +920,8 @@ class Olic_Checkout_Captcha {
 	 * @param WC_Order        $order   Order being updated.
 	 * @param WP_REST_Request $request Store API request.
 	 * @return WC_Order
-	 * @throws \Exception When verification fails.
+	 * @throws \Automattic\WooCommerce\StoreApi\Exceptions\RouteException When verification fails.
+	 * @throws \Exception When verification fails and RouteException is unavailable.
 	 */
 	public function validate_store_api_checkout( $order, $request ) {
 		if ( ! is_object( $request ) || ! method_exists( $request, 'get_method' ) || 'POST' !== $request->get_method() ) {
@@ -936,7 +937,25 @@ class Olic_Checkout_Captcha {
 			return $order;
 		}
 
-		throw new \Exception( esc_html( $result['message'] ) );
+		$this->throw_store_api_failure( $result['message'] );
+	}
+
+	/**
+	 * Abort a Store API checkout with HTTP 400 instead of a generic 500.
+	 *
+	 * @since 1.2.2
+	 *
+	 * @param string $message Translated failure message.
+	 * @return void
+	 * @throws \Automattic\WooCommerce\StoreApi\Exceptions\RouteException When the Store API exception class exists.
+	 * @throws \Exception When RouteException is unavailable (older WooCommerce).
+	 */
+	private function throw_store_api_failure( $message ) {
+		if ( class_exists( \Automattic\WooCommerce\StoreApi\Exceptions\RouteException::class ) ) {
+			throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException( 'olic_captcha_failed', esc_html( $message ), 400 );
+		}
+
+		throw new \Exception( esc_html( $message ), 400 );
 	}
 
 	/**
