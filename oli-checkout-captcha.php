@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Oli Checkout Captcha
  * Plugin URI: https://github.com/olivierbigras/Oli-Checkout-Captcha
- * Description: Adds Google reCAPTCHA v2 protection to WooCommerce block-based checkout to prevent spam orders.
- * Version: 1.1.1
+ * Description: Blocks bots and card testing at WooCommerce checkout with Google reCAPTCHA v2/v3 or Cloudflare Turnstile. Works with classic and block checkout.
+ * Version: 1.2.0
  * Author: Olivier Bigras
  * Author URI: https://github.com/olivierbigras
  * License: GPL-2.0-or-later
@@ -25,12 +25,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! defined( 'OLIC_PLUGIN_LOADED' ) ) {
 	define( 'OLIC_PLUGIN_LOADED', true );
-	define( 'OLIC_VERSION', '1.1.1' );
+	define( 'OLIC_VERSION', '1.2.0' );
 	define( 'OLIC_PLUGIN_FILE', __FILE__ );
 	define( 'OLIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 	define( 'OLIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 	require_once OLIC_PLUGIN_DIR . 'includes/olic-upgrade.php';
+	require_once OLIC_PLUGIN_DIR . 'includes/class-olic-verifier.php';
+	require_once OLIC_PLUGIN_DIR . 'includes/class-olic-rate-limiter.php';
 	require_once OLIC_PLUGIN_DIR . 'includes/class-olic-checkout-captcha.php';
 
 	/**
@@ -47,6 +49,8 @@ if ( ! defined( 'OLIC_PLUGIN_LOADED' ) ) {
 
 	/**
 	 * Boot the plugin after all plugins are loaded.
+	 *
+	 * Translations are loaded automatically by WordPress.org (WP 4.6+).
 	 *
 	 * @since 1.1.0
 	 *

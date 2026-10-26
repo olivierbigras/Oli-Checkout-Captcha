@@ -1,6 +1,6 @@
 {
   "name": "olivierbigras/oli-checkout-captcha",
-  "description": "Adds Google reCAPTCHA v2 protection to WooCommerce block-based checkout.",
+  "description": "Blocks bots and card testing at WooCommerce checkout with reCAPTCHA v2/v3 or Cloudflare Turnstile.",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "homepage": "https://github.com/olivierbigras/Oli-Checkout-Captcha",

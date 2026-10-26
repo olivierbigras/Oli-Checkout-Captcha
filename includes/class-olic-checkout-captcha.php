@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers settings, checkout assets, and reCAPTCHA validation.
+ * Registers settings, checkout assets, and captcha validation.
  *
  * @since 1.0.0
  */
@@ -33,6 +33,14 @@ class Olic_Checkout_Captcha {
 	const LEGACY_EXTENSION_NAMESPACE = 'recaptcha-block-checkout';
 
 	/**
+	 * reCAPTCHA v3 action sent with execute() and checked server-side.
+	 *
+	 * @since 1.2.0
+	 * @var string
+	 */
+	const CAPTCHA_ACTION = 'checkout';
+
+	/**
 	 * Singleton instance.
 	 *
 	 * @var Olic_Checkout_Captcha|null
@@ -40,18 +48,20 @@ class Olic_Checkout_Captcha {
 	private static $instance = null;
 
 	/**
-	 * Google reCAPTCHA site key.
+	 * Token verifier.
 	 *
-	 * @var string
+	 * @since 1.2.0
+	 * @var Olic_Verifier
 	 */
-	private $site_key = '';
+	private $verifier;
 
 	/**
-	 * Google reCAPTCHA secret key.
+	 * Failed-attempt limiter.
 	 *
-	 * @var string
+	 * @since 1.2.0
+	 * @var Olic_Rate_Limiter
 	 */
-	private $secret_key = '';
+	private $rate_limiter;
 
 	/**
 	 * Get the singleton instance.
@@ -74,10 +84,9 @@ class Olic_Checkout_Captcha {
 	 * @since 1.0.0
 	 */
 	private function __construct() {
-		$this->site_key   = $this->get_stored_api_key( 'olic_site_key' );
-		$this->secret_key = $this->get_stored_api_key( 'olic_secret_key' );
+		$this->verifier     = new Olic_Verifier();
+		$this->rate_limiter = new Olic_Rate_Limiter();
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'option_page_capability_olic_settings', array( $this, 'get_settings_capability' ) );
@@ -92,24 +101,11 @@ class Olic_Checkout_Captcha {
 
 		if ( $this->has_keys() ) {
 			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+			add_action( 'woocommerce_review_order_before_submit', array( $this, 'render_classic_widget' ) );
+			add_action( 'woocommerce_checkout_process', array( $this, 'validate_classic_checkout' ) );
 			add_action( 'woocommerce_blocks_loaded', array( $this, 'register_endpoint_data' ) );
-			add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'validate_checkout' ), 10, 2 );
+			add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'validate_store_api_checkout' ), 10, 2 );
 		}
-	}
-
-	/**
-	 * Load translations from the languages directory.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function load_textdomain() {
-		load_plugin_textdomain(
-			'oli-checkout-captcha',
-			false,
-			dirname( plugin_basename( OLIC_PLUGIN_FILE ) ) . '/languages'
-		);
 	}
 
 	/**
@@ -180,37 +176,29 @@ class Olic_Checkout_Captcha {
 			return;
 		}
 
-		register_setting(
-			'olic_settings',
-			'olic_site_key',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( $this, 'sanitize_api_key' ),
-				'default'           => '',
-				'show_in_rest'      => false,
-			)
+		$this->register_string_setting( 'olic_provider', array( $this, 'sanitize_provider' ), 'recaptcha_v2' );
+		$this->register_string_setting( 'olic_site_key', array( $this, 'sanitize_api_key' ), '' );
+		$this->register_string_setting( 'olic_secret_key', array( $this, 'sanitize_api_key' ), '' );
+		$this->register_string_setting( 'olic_theme', array( $this, 'sanitize_theme' ), 'light' );
+		$this->register_string_setting( 'olic_score_threshold', array( $this, 'sanitize_score_threshold' ), '0.5' );
+		$this->register_string_setting( 'olic_fail_closed', array( $this, 'sanitize_checkbox' ), '1' );
+		$this->register_string_setting( 'olic_rate_limit_enabled', array( $this, 'sanitize_checkbox' ), '0' );
+		$this->register_string_setting( 'olic_rate_limit_max', array( $this, 'sanitize_rate_limit_max' ), '10' );
+		$this->register_string_setting( 'olic_rate_limit_window', array( $this, 'sanitize_rate_limit_window' ), '900' );
+
+		add_settings_section(
+			'olic_provider_section',
+			__( 'Provider', 'oli-checkout-captcha' ),
+			array( $this, 'render_provider_section' ),
+			'oli-checkout-captcha'
 		);
 
-		register_setting(
-			'olic_settings',
-			'olic_secret_key',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( $this, 'sanitize_api_key' ),
-				'default'           => '',
-				'show_in_rest'      => false,
-			)
-		);
-
-		register_setting(
-			'olic_settings',
-			'olic_theme',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( $this, 'sanitize_theme' ),
-				'default'           => 'light',
-				'show_in_rest'      => false,
-			)
+		add_settings_field(
+			'olic_provider',
+			__( 'Captcha provider', 'oli-checkout-captcha' ),
+			array( $this, 'render_provider_field' ),
+			'oli-checkout-captcha',
+			'olic_provider_section'
 		);
 
 		add_settings_section(
@@ -236,12 +224,96 @@ class Olic_Checkout_Captcha {
 			'olic_settings_section'
 		);
 
+		add_settings_section(
+			'olic_verification_section',
+			__( 'Verification', 'oli-checkout-captcha' ),
+			array( $this, 'render_verification_section' ),
+			'oli-checkout-captcha'
+		);
+
+		add_settings_field(
+			'olic_score_threshold',
+			__( 'reCAPTCHA v3 score threshold', 'oli-checkout-captcha' ),
+			array( $this, 'render_score_threshold_field' ),
+			'oli-checkout-captcha',
+			'olic_verification_section'
+		);
+
+		add_settings_field(
+			'olic_fail_closed',
+			__( 'Fail closed', 'oli-checkout-captcha' ),
+			array( $this, 'render_fail_closed_field' ),
+			'oli-checkout-captcha',
+			'olic_verification_section'
+		);
+
+		add_settings_section(
+			'olic_rate_limit_section',
+			__( 'Rate limiting', 'oli-checkout-captcha' ),
+			array( $this, 'render_rate_limit_section' ),
+			'oli-checkout-captcha'
+		);
+
+		add_settings_field(
+			'olic_rate_limit_enabled',
+			__( 'Limit failed attempts', 'oli-checkout-captcha' ),
+			array( $this, 'render_rate_limit_enabled_field' ),
+			'oli-checkout-captcha',
+			'olic_rate_limit_section'
+		);
+
+		add_settings_field(
+			'olic_rate_limit_max',
+			__( 'Maximum failures', 'oli-checkout-captcha' ),
+			array( $this, 'render_rate_limit_max_field' ),
+			'oli-checkout-captcha',
+			'olic_rate_limit_section'
+		);
+
+		add_settings_field(
+			'olic_rate_limit_window',
+			__( 'Window (seconds)', 'oli-checkout-captcha' ),
+			array( $this, 'render_rate_limit_window_field' ),
+			'oli-checkout-captcha',
+			'olic_rate_limit_section'
+		);
+
+		add_settings_section(
+			'olic_appearance_section',
+			__( 'Appearance', 'oli-checkout-captcha' ),
+			'__return_false',
+			'oli-checkout-captcha'
+		);
+
 		add_settings_field(
 			'olic_theme',
 			__( 'Theme', 'oli-checkout-captcha' ),
 			array( $this, 'render_theme_field' ),
 			'oli-checkout-captcha',
-			'olic_settings_section'
+			'olic_appearance_section'
+		);
+	}
+
+	/**
+	 * Register one string option on the settings page.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string   $option_name Option name.
+	 * @param callable $sanitize    Sanitization callback.
+	 * @param string   $default     Default value.
+	 * @return void
+	 */
+	private function register_string_setting( $option_name, $sanitize, $default ) {
+		register_setting(
+			'olic_settings',
+			$option_name,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => $sanitize,
+				'default'           => $default,
+				'show_in_rest'      => false,
+			)
 		);
 	}
 
@@ -261,12 +333,12 @@ class Olic_Checkout_Captcha {
 
 		echo '<div class="wrap">';
 		echo '<h1>' . esc_html( get_admin_page_title() ) . '</h1>';
-		echo '<p>' . esc_html__( 'Add Google reCAPTCHA v2 to your WooCommerce block checkout to prevent spam orders.', 'oli-checkout-captcha' ) . '</p>';
+		echo '<p>' . esc_html__( 'Protect WooCommerce classic and block checkout from bots and card testing. Choose Google reCAPTCHA v2, reCAPTCHA v3, or Cloudflare Turnstile.', 'oli-checkout-captcha' ) . '</p>';
 
 		if ( $this->has_keys() ) {
-			echo '<div class="notice notice-success"><p><strong>' . esc_html__( 'reCAPTCHA is active and protecting your checkout.', 'oli-checkout-captcha' ) . '</strong></p></div>';
+			echo '<div class="notice notice-success inline"><p><strong>' . esc_html__( 'Captcha is active and protecting checkout.', 'oli-checkout-captcha' ) . '</strong></p></div>';
 		} else {
-			echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Please configure your reCAPTCHA API keys below.', 'oli-checkout-captcha' ) . '</strong></p></div>';
+			echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__( 'Enter your site key and secret key below to enable checkout protection.', 'oli-checkout-captcha' ) . '</strong></p></div>';
 		}
 
 		echo '<form method="post" action="options.php">';
@@ -278,14 +350,52 @@ class Olic_Checkout_Captcha {
 	}
 
 	/**
-	 * Render the settings section description.
+	 * Render the provider section description.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_provider_section() {
+		echo '<p>' . esc_html__( 'Use one provider at a time. Scripts load only on the checkout page.', 'oli-checkout-captcha' ) . '</p>';
+	}
+
+	/**
+	 * Render the provider field.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_provider_field() {
+		$provider = $this->get_provider();
+		$choices  = array(
+			Olic_Verifier::PROVIDER_RECAPTCHA_V2 => __( 'Google reCAPTCHA v2 (checkbox)', 'oli-checkout-captcha' ),
+			Olic_Verifier::PROVIDER_RECAPTCHA_V3 => __( 'Google reCAPTCHA v3 (score)', 'oli-checkout-captcha' ),
+			Olic_Verifier::PROVIDER_TURNSTILE    => __( 'Cloudflare Turnstile', 'oli-checkout-captcha' ),
+		);
+
+		echo '<select id="olic_provider" name="olic_provider">';
+		foreach ( $choices as $value => $label ) {
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( $value ),
+				selected( $provider, $value, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</select>';
+	}
+
+	/**
+	 * Render the API keys section description.
 	 *
 	 * @since 1.1.0
 	 *
 	 * @return void
 	 */
 	public function render_settings_section() {
-		echo '<p>' . esc_html__( 'Keys are stored in the WordPress options table and used only to verify checkout submissions with Google reCAPTCHA.', 'oli-checkout-captcha' ) . '</p>';
+		echo '<p>' . esc_html__( 'Keys are stored in the WordPress options table and used only to verify checkout submissions with the selected provider. This plugin does not track shoppers.', 'oli-checkout-captcha' ) . '</p>';
 	}
 
 	/**
@@ -298,21 +408,27 @@ class Olic_Checkout_Captcha {
 	public function render_site_key_field() {
 		printf(
 			'<input type="text" id="olic_site_key" name="olic_site_key" value="%s" class="regular-text" autocomplete="off" />',
-			esc_attr( $this->get_stored_api_key( 'olic_site_key' ) )
+			esc_attr( $this->get_stored_option( 'olic_site_key' ) )
 		);
 
-		$link = sprintf(
+		$recaptcha_link = sprintf(
 			'<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
 			esc_url( 'https://www.google.com/recaptcha/admin/create' ),
 			esc_html__( 'Google reCAPTCHA Admin', 'oli-checkout-captcha' )
+		);
+		$turnstile_link = sprintf(
+			'<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
+			esc_url( 'https://dash.cloudflare.com/?to=/:account/turnstile' ),
+			esc_html__( 'Cloudflare Turnstile', 'oli-checkout-captcha' )
 		);
 
 		echo '<p class="description">';
 		echo wp_kses(
 			sprintf(
-				/* translators: %s: link to the Google reCAPTCHA admin console */
-				__( 'Get your keys from %s. Use reCAPTCHA v2 "I\'m not a robot" Checkbox.', 'oli-checkout-captcha' ),
-				$link
+				/* translators: 1: Google reCAPTCHA admin link, 2: Cloudflare Turnstile dashboard link */
+				__( 'Get reCAPTCHA keys from %1$s. Get Turnstile keys from %2$s.', 'oli-checkout-captcha' ),
+				$recaptcha_link,
+				$turnstile_link
 			),
 			array(
 				'a' => array(
@@ -335,8 +451,107 @@ class Olic_Checkout_Captcha {
 	public function render_secret_key_field() {
 		printf(
 			'<input type="text" id="olic_secret_key" name="olic_secret_key" value="%s" class="regular-text" autocomplete="off" />',
-			esc_attr( $this->get_stored_api_key( 'olic_secret_key' ) )
+			esc_attr( $this->get_stored_option( 'olic_secret_key' ) )
 		);
+	}
+
+	/**
+	 * Render the verification section description.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_verification_section() {
+		echo '<p>' . esc_html__( 'Server-side verification runs on classic checkout and WooCommerce Store API (block) checkout.', 'oli-checkout-captcha' ) . '</p>';
+	}
+
+	/**
+	 * Render the score threshold field.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_score_threshold_field() {
+		printf(
+			'<input type="number" id="olic_score_threshold" name="olic_score_threshold" value="%s" min="0" max="1" step="0.05" class="small-text" />',
+			esc_attr( (string) $this->get_score_threshold() )
+		);
+		echo '<p class="description">' . esc_html__( 'Used only for reCAPTCHA v3. Requests scoring below this value (0.0–1.0) are rejected. Default is 0.5.', 'oli-checkout-captcha' ) . '</p>';
+	}
+
+	/**
+	 * Render the fail-closed field.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_fail_closed_field() {
+		echo '<input type="hidden" name="olic_fail_closed" value="0" />';
+		printf(
+			'<label><input type="checkbox" id="olic_fail_closed" name="olic_fail_closed" value="1"%s /> %s</label>',
+			checked( $this->is_fail_closed(), true, false ),
+			esc_html__( 'Block checkout when the captcha provider cannot be reached.', 'oli-checkout-captcha' )
+		);
+		echo '<p class="description">' . esc_html__( 'When unchecked, a provider outage allows checkout to continue (fail open).', 'oli-checkout-captcha' ) . '</p>';
+	}
+
+	/**
+	 * Render the rate-limit section description.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_rate_limit_section() {
+		echo '<p>' . esc_html__( 'Optional. Failed checkout verifications can be limited per visitor IP. Successful checkouts clear the counter. IPs are hashed before storage.', 'oli-checkout-captcha' ) . '</p>';
+	}
+
+	/**
+	 * Render the rate-limit enabled field.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_rate_limit_enabled_field() {
+		echo '<input type="hidden" name="olic_rate_limit_enabled" value="0" />';
+		printf(
+			'<label><input type="checkbox" id="olic_rate_limit_enabled" name="olic_rate_limit_enabled" value="1"%s /> %s</label>',
+			checked( $this->is_rate_limit_enabled(), true, false ),
+			esc_html__( 'Enable rate limiting of failed captcha attempts.', 'oli-checkout-captcha' )
+		);
+	}
+
+	/**
+	 * Render the rate-limit maximum field.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_rate_limit_max_field() {
+		printf(
+			'<input type="number" id="olic_rate_limit_max" name="olic_rate_limit_max" value="%s" min="1" step="1" class="small-text" />',
+			esc_attr( (string) $this->get_rate_limit_max() )
+		);
+	}
+
+	/**
+	 * Render the rate-limit window field.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_rate_limit_window_field() {
+		printf(
+			'<input type="number" id="olic_rate_limit_window" name="olic_rate_limit_window" value="%s" min="60" step="1" class="small-text" />',
+			esc_attr( (string) $this->get_rate_limit_window() )
+		);
+		echo '<p class="description">' . esc_html__( 'Number of seconds the failure counter is kept. Minimum 60.', 'oli-checkout-captcha' ) . '</p>';
 	}
 
 	/**
@@ -347,24 +562,51 @@ class Olic_Checkout_Captcha {
 	 * @return void
 	 */
 	public function render_theme_field() {
-		$theme = $this->get_theme();
+		$theme   = $this->get_theme();
+		$choices = array(
+			'light' => __( 'Light', 'oli-checkout-captcha' ),
+			'dark'  => __( 'Dark', 'oli-checkout-captcha' ),
+			'auto'  => __( 'Auto (Turnstile only)', 'oli-checkout-captcha' ),
+		);
 
 		echo '<select id="olic_theme" name="olic_theme">';
-		printf(
-			'<option value="light"%s>%s</option>',
-			selected( $theme, 'light', false ),
-			esc_html__( 'Light', 'oli-checkout-captcha' )
-		);
-		printf(
-			'<option value="dark"%s>%s</option>',
-			selected( $theme, 'dark', false ),
-			esc_html__( 'Dark', 'oli-checkout-captcha' )
-		);
+		foreach ( $choices as $value => $label ) {
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( $value ),
+				selected( $theme, $value, false ),
+				esc_html( $label )
+			);
+		}
 		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Used for reCAPTCHA v2 and Turnstile widgets. reCAPTCHA v3 is invisible.', 'oli-checkout-captcha' ) . '</p>';
 	}
 
 	/**
-	 * Sanitize a reCAPTCHA API key.
+	 * Sanitize a captcha provider slug.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return string
+	 */
+	public function sanitize_provider( $value ) {
+		if ( ! current_user_can( $this->get_settings_capability() ) ) {
+			return Olic_Verifier::PROVIDER_RECAPTCHA_V2;
+		}
+
+		$value   = sanitize_key( wp_unslash( (string) $value ) );
+		$allowed = array(
+			Olic_Verifier::PROVIDER_RECAPTCHA_V2,
+			Olic_Verifier::PROVIDER_RECAPTCHA_V3,
+			Olic_Verifier::PROVIDER_TURNSTILE,
+		);
+
+		return in_array( $value, $allowed, true ) ? $value : Olic_Verifier::PROVIDER_RECAPTCHA_V2;
+	}
+
+	/**
+	 * Sanitize a provider API key.
 	 *
 	 * @since 1.1.0
 	 *
@@ -396,20 +638,98 @@ class Olic_Checkout_Captcha {
 		}
 
 		$value   = sanitize_key( wp_unslash( (string) $value ) );
-		$allowed = array( 'light', 'dark' );
+		$allowed = array( 'light', 'dark', 'auto' );
 
 		return in_array( $value, $allowed, true ) ? $value : 'light';
 	}
 
 	/**
+	 * Sanitize the reCAPTCHA v3 score threshold.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return string
+	 */
+	public function sanitize_score_threshold( $value ) {
+		if ( ! current_user_can( $this->get_settings_capability() ) ) {
+			return '0.5';
+		}
+
+		$score = (float) sanitize_text_field( wp_unslash( (string) $value ) );
+		if ( $score < 0 ) {
+			$score = 0.0;
+		}
+		if ( $score > 1 ) {
+			$score = 1.0;
+		}
+
+		return (string) round( $score, 2 );
+	}
+
+	/**
+	 * Sanitize a checkbox stored as 1 or 0.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return string
+	 */
+	public function sanitize_checkbox( $value ) {
+		if ( ! current_user_can( $this->get_settings_capability() ) ) {
+			return '0';
+		}
+
+		return ( '1' === (string) $value || 1 === $value || true === $value ) ? '1' : '0';
+	}
+
+	/**
+	 * Sanitize the maximum failed attempts.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return string
+	 */
+	public function sanitize_rate_limit_max( $value ) {
+		if ( ! current_user_can( $this->get_settings_capability() ) ) {
+			return '10';
+		}
+
+		return (string) max( 1, absint( $value ) );
+	}
+
+	/**
+	 * Sanitize the rate-limit window in seconds.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return string
+	 */
+	public function sanitize_rate_limit_window( $value ) {
+		if ( ! current_user_can( $this->get_settings_capability() ) ) {
+			return '900';
+		}
+
+		return (string) max( 60, absint( $value ) );
+	}
+
+	/**
 	 * Show an admin notice when WooCommerce is missing.
+	 *
+	 * Shown only on this plugin's settings screen.
 	 *
 	 * @since 1.1.0
 	 *
 	 * @return void
 	 */
 	public function render_missing_woocommerce_notice() {
-		if ( ! current_user_can( 'activate_plugins' ) ) {
+		if ( ! $this->is_plugin_settings_screen() ) {
+			return;
+		}
+
+		if ( ! current_user_can( $this->get_settings_capability() ) ) {
 			return;
 		}
 
@@ -419,14 +739,14 @@ class Olic_Checkout_Captcha {
 	}
 
 	/**
-	 * Enqueue checkout CSS and JavaScript from files (no inline assets).
+	 * Enqueue checkout CSS and JavaScript only on the checkout page.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function enqueue_scripts() {
-		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+		if ( ! $this->is_frontend_checkout() || ! $this->has_keys() ) {
 			return;
 		}
 
@@ -440,7 +760,7 @@ class Olic_Checkout_Captcha {
 		wp_register_script(
 			'olic-checkout',
 			plugins_url( 'js/checkout.js', OLIC_PLUGIN_FILE ),
-			array( 'wp-data' ),
+			array(),
 			OLIC_VERSION,
 			true
 		);
@@ -449,17 +769,48 @@ class Olic_Checkout_Captcha {
 			'olic-checkout',
 			'olicConfig',
 			array(
-				'siteKey'   => $this->site_key,
+				'siteKey'   => $this->get_stored_option( 'olic_site_key' ),
 				'theme'     => $this->get_theme(),
 				'namespace' => self::EXTENSION_NAMESPACE,
+				'provider'  => $this->get_provider(),
+				'action'    => self::CAPTCHA_ACTION,
 			)
 		);
 
 		wp_enqueue_script( 'olic-checkout' );
 
+		$provider = $this->get_provider();
+		if ( Olic_Verifier::PROVIDER_TURNSTILE === $provider ) {
+			wp_enqueue_script(
+				'olic-turnstile',
+				'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=olicCaptchaOnLoad&render=explicit',
+				array( 'olic-checkout' ),
+				OLIC_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			return;
+		}
+
+		if ( Olic_Verifier::PROVIDER_RECAPTCHA_V3 === $provider ) {
+			wp_enqueue_script(
+				'olic-recaptcha',
+				'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( $this->get_stored_option( 'olic_site_key' ) ),
+				array( 'olic-checkout' ),
+				OLIC_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			return;
+		}
+
 		wp_enqueue_script(
-			'olic-google-recaptcha',
-			'https://www.google.com/recaptcha/api.js?onload=olicRecaptchaOnLoad&render=explicit',
+			'olic-recaptcha',
+			'https://www.google.com/recaptcha/api.js?onload=olicCaptchaOnLoad&render=explicit',
 			array( 'olic-checkout' ),
 			OLIC_VERSION,
 			array(
@@ -467,6 +818,30 @@ class Olic_Checkout_Captcha {
 				'strategy'  => 'defer',
 			)
 		);
+	}
+
+	/**
+	 * Render the classic checkout widget container and hidden token field.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function render_classic_widget() {
+		if ( ! $this->has_keys() ) {
+			return;
+		}
+
+		$provider = $this->get_provider();
+		$classes  = 'olic-captcha-container';
+		if ( Olic_Verifier::PROVIDER_RECAPTCHA_V3 === $provider ) {
+			$classes .= ' olic-captcha-container--v3';
+		}
+
+		echo '<div id="olic-captcha-container" class="' . esc_attr( $classes ) . '">';
+		echo '<div id="olic-captcha-widget"></div>';
+		echo '<input type="hidden" name="olic_captcha_token" id="olic-captcha-token" value="" />';
+		echo '</div>';
 	}
 
 	/**
@@ -500,7 +875,7 @@ class Olic_Checkout_Captcha {
 	public function get_checkout_endpoint_schema() {
 		return array(
 			'token' => array(
-				'description' => __( 'reCAPTCHA token', 'oli-checkout-captcha' ),
+				'description' => __( 'Checkout captcha token', 'oli-checkout-captcha' ),
 				'type'        => 'string',
 				'readonly'    => false,
 				'context'     => array( 'view', 'edit' ),
@@ -509,9 +884,35 @@ class Olic_Checkout_Captcha {
 	}
 
 	/**
-	 * Validate the reCAPTCHA token when the Store API creates an order.
+	 * Validate the captcha token on classic shortcode checkout.
+	 *
+	 * WooCommerce verifies its checkout nonce before this hook runs.
+	 * Guests must be able to check out, so a manage_options check is not applied.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return void
+	 */
+	public function validate_classic_checkout() {
+		if ( $this->is_express_checkout( null ) ) {
+			return;
+		}
+
+		$result = $this->verify_posted_token( $this->get_token_from_post() );
+		if ( $result['ok'] ) {
+			return;
+		}
+
+		if ( function_exists( 'wc_add_notice' ) ) {
+			wc_add_notice( esc_html( $result['message'] ), 'error' );
+		}
+	}
+
+	/**
+	 * Validate the captcha token when the Store API creates an order.
 	 *
 	 * This is a WooCommerce Store API checkout callback, not a custom REST route.
+	 * Only POST (place order) is validated so draft checkout updates are not blocked.
 	 * Guests must be able to check out, so a manage_options capability check is not applied.
 	 *
 	 * @since 1.0.0
@@ -521,46 +922,21 @@ class Olic_Checkout_Captcha {
 	 * @return WC_Order
 	 * @throws \Exception When verification fails.
 	 */
-	public function validate_checkout( $order, $request ) {
+	public function validate_store_api_checkout( $order, $request ) {
 		if ( ! is_object( $request ) || ! method_exists( $request, 'get_method' ) || 'POST' !== $request->get_method() ) {
 			return $order;
 		}
 
-		$token = $this->get_token_from_request( $request );
-
-		if ( '' === $token ) {
-			throw new \Exception( esc_html__( 'Please complete the reCAPTCHA verification.', 'oli-checkout-captcha' ) );
+		if ( $this->is_express_checkout( $request ) ) {
+			return $order;
 		}
 
-		$body = array(
-			'secret'   => $this->secret_key,
-			'response' => $token,
-		);
-
-		$remote_ip = $this->get_remote_ip();
-		if ( '' !== $remote_ip ) {
-			$body['remoteip'] = $remote_ip;
+		$result = $this->verify_posted_token( $this->get_token_from_request( $request ) );
+		if ( $result['ok'] ) {
+			return $order;
 		}
 
-		$response = wp_remote_post(
-			'https://www.google.com/recaptcha/api/siteverify',
-			array(
-				'timeout' => 10,
-				'body'    => $body,
-			)
-		);
-
-		if ( is_wp_error( $response ) ) {
-			throw new \Exception( esc_html__( 'reCAPTCHA verification failed. Please try again.', 'oli-checkout-captcha' ) );
-		}
-
-		$payload = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( empty( $payload['success'] ) ) {
-			throw new \Exception( esc_html__( 'reCAPTCHA verification failed. Please complete the challenge again.', 'oli-checkout-captcha' ) );
-		}
-
-		return $order;
+		throw new \Exception( esc_html( $result['message'] ) );
 	}
 
 	/**
@@ -576,6 +952,57 @@ class Olic_Checkout_Captcha {
 		}
 
 		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', OLIC_PLUGIN_FILE, true );
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', OLIC_PLUGIN_FILE, true );
+	}
+
+	/**
+	 * Run rate-limit and provider verification for a token.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string $token Captcha token.
+	 * @return array{ok:bool, message:string, score:float|null, http_failed:bool}
+	 */
+	private function verify_posted_token( $token ) {
+		$ip = $this->get_remote_ip();
+
+		if ( $this->rate_limiter->is_limited( $ip, $this->get_rate_limit_max(), $this->get_rate_limit_window() ) ) {
+			return array(
+				'ok'          => false,
+				'message'     => __( 'Too many failed captcha attempts. Please wait and try again.', 'oli-checkout-captcha' ),
+				'score'       => null,
+				'http_failed' => false,
+			);
+		}
+
+		$result = $this->verifier->verify( $token, $this->get_verify_settings() );
+
+		if ( ! $result['ok'] ) {
+			$this->rate_limiter->record_failure( $ip, $this->get_rate_limit_window() );
+			return $result;
+		}
+
+		$this->rate_limiter->clear( $ip );
+
+		return $result;
+	}
+
+	/**
+	 * Settings passed to the verifier.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function get_verify_settings() {
+		return array(
+			'provider'         => $this->get_provider(),
+			'secret'           => $this->get_stored_option( 'olic_secret_key' ),
+			'remote_ip'        => $this->get_remote_ip(),
+			'score_threshold'  => $this->get_score_threshold(),
+			'expected_action'  => self::CAPTCHA_ACTION,
+			'fail_closed'      => $this->is_fail_closed(),
+		);
 	}
 
 	/**
@@ -586,20 +1013,39 @@ class Olic_Checkout_Captcha {
 	 * @return bool
 	 */
 	private function has_keys() {
-		return ( '' !== $this->site_key && '' !== $this->secret_key );
+		return ( '' !== $this->get_stored_option( 'olic_site_key' ) && '' !== $this->get_stored_option( 'olic_secret_key' ) );
 	}
 
 	/**
-	 * Get a stored API key option.
+	 * Get a stored string option.
 	 *
-	 * @since 1.1.0
+	 * @since 1.2.0
 	 *
 	 * @param string $option_name Option name.
+	 * @param string $default     Default value.
 	 * @return string
 	 */
-	private function get_stored_api_key( $option_name ) {
-		$value = get_option( $option_name, '' );
-		return is_string( $value ) ? $value : '';
+	private function get_stored_option( $option_name, $default = '' ) {
+		$value = get_option( $option_name, $default );
+		return is_string( $value ) ? $value : $default;
+	}
+
+	/**
+	 * Get the selected captcha provider.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return string
+	 */
+	private function get_provider() {
+		$provider = sanitize_key( $this->get_stored_option( 'olic_provider', Olic_Verifier::PROVIDER_RECAPTCHA_V2 ) );
+		$allowed  = array(
+			Olic_Verifier::PROVIDER_RECAPTCHA_V2,
+			Olic_Verifier::PROVIDER_RECAPTCHA_V3,
+			Olic_Verifier::PROVIDER_TURNSTILE,
+		);
+
+		return in_array( $provider, $allowed, true ) ? $provider : Olic_Verifier::PROVIDER_RECAPTCHA_V2;
 	}
 
 	/**
@@ -610,15 +1056,155 @@ class Olic_Checkout_Captcha {
 	 * @return string
 	 */
 	private function get_theme() {
-		$theme   = get_option( 'olic_theme', 'light' );
-		$theme   = is_string( $theme ) ? $theme : 'light';
-		$allowed = array( 'light', 'dark' );
+		$theme   = sanitize_key( $this->get_stored_option( 'olic_theme', 'light' ) );
+		$allowed = array( 'light', 'dark', 'auto' );
 
-		return in_array( $theme, $allowed, true ) ? $theme : 'light';
+		if ( ! in_array( $theme, $allowed, true ) ) {
+			return 'light';
+		}
+
+		if ( 'auto' === $theme && Olic_Verifier::PROVIDER_TURNSTILE !== $this->get_provider() ) {
+			return 'light';
+		}
+
+		return $theme;
 	}
 
 	/**
-	 * Read the reCAPTCHA token from the Store API request.
+	 * Get the reCAPTCHA v3 score threshold.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return float
+	 */
+	private function get_score_threshold() {
+		$score = (float) $this->get_stored_option( 'olic_score_threshold', '0.5' );
+		if ( $score < 0 ) {
+			return 0.0;
+		}
+		if ( $score > 1 ) {
+			return 1.0;
+		}
+
+		return $score;
+	}
+
+	/**
+	 * Whether verification should fail closed on provider outages.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return bool
+	 */
+	private function is_fail_closed() {
+		return ( '1' === $this->get_stored_option( 'olic_fail_closed', '1' ) );
+	}
+
+	/**
+	 * Whether failed-attempt rate limiting is enabled.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return bool
+	 */
+	private function is_rate_limit_enabled() {
+		return ( '1' === $this->get_stored_option( 'olic_rate_limit_enabled', '0' ) );
+	}
+
+	/**
+	 * Maximum failed attempts in the window.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return int
+	 */
+	private function get_rate_limit_max() {
+		return max( 1, absint( $this->get_stored_option( 'olic_rate_limit_max', '10' ) ) );
+	}
+
+	/**
+	 * Rate-limit window in seconds.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return int
+	 */
+	private function get_rate_limit_window() {
+		return max( 60, absint( $this->get_stored_option( 'olic_rate_limit_window', '900' ) ) );
+	}
+
+	/**
+	 * Whether the current request is the shopper checkout page.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return bool
+	 */
+	private function is_frontend_checkout() {
+		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+			return false;
+		}
+
+		if ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) {
+			return false;
+		}
+
+		if ( function_exists( 'is_checkout_pay_page' ) && is_checkout_pay_page() ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Whether the current admin request is this plugin's settings screen.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return bool
+	 */
+	private function is_plugin_settings_screen() {
+		if ( function_exists( 'get_current_screen' ) ) {
+			$screen = get_current_screen();
+			if ( is_object( $screen ) && isset( $screen->id ) && 'settings_page_oli-checkout-captcha' === $screen->id ) {
+				return true;
+			}
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin page identifier.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+
+		return ( 'oli-checkout-captcha' === $page );
+	}
+
+	/**
+	 * Read the captcha token from classic checkout POST data.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return string
+	 */
+	private function get_token_from_post() {
+		$keys = array( 'olic_captcha_token', 'g-recaptcha-response', 'cf-turnstile-response' );
+
+		foreach ( $keys as $key ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before woocommerce_checkout_process.
+			if ( ! isset( $_POST[ $key ] ) ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before woocommerce_checkout_process.
+			$token = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
+			if ( '' !== $token ) {
+				return $token;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Read the captcha token from the Store API request.
 	 *
 	 * Accepts the current namespace and the pre-rename namespace so cached
 	 * checkout scripts continue to work after the slug change.
@@ -652,7 +1238,152 @@ class Olic_Checkout_Captcha {
 	}
 
 	/**
-	 * Sanitize the visitor IP used for Google siteverify.
+	 * Whether this checkout request is an express/wallet payment.
+	 *
+	 * Express buttons (Apple Pay, Google Pay, Payment Request) must not be
+	 * blocked by a captcha widget the shopper never sees.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param WP_REST_Request|null $request Optional Store API request.
+	 * @return bool
+	 */
+	private function is_express_checkout( $request ) {
+		if ( ! apply_filters( 'olic_skip_express_payments', true, $request ) ) {
+			return false;
+		}
+
+		$method = $this->get_payment_method( $request );
+		$ids    = apply_filters(
+			'olic_express_payment_ids',
+			array(
+				'apple_pay',
+				'google_pay',
+				'stripe_applepay',
+				'stripe_googlepay',
+				'stripe_payment_request',
+				'payment_request',
+				'woocommerce_payments_apple_pay',
+				'woocommerce_payments_google_pay',
+				'ppcp-applepay',
+				'ppcp-googlepay',
+				'amazon_payments_advanced',
+			),
+			$request
+		);
+
+		if ( '' !== $method && in_array( $method, $ids, true ) ) {
+			return true;
+		}
+
+		$data           = $this->get_payment_data_map( $request );
+		$express_values = array(
+			'1',
+			'true',
+			'yes',
+			'apple_pay',
+			'google_pay',
+			'apple-pay',
+			'google-pay',
+			'payment_request',
+			'express',
+		);
+
+		$flag_keys = array(
+			'paymentRequestType',
+			'payment_request_type',
+			'express_payment_type',
+			'expressPaymentType',
+			'wc-stripe-is-express-checkout',
+			'isExpressCheckout',
+			'is_express',
+			'isExpress',
+		);
+
+		foreach ( $flag_keys as $key ) {
+			if ( empty( $data[ $key ] ) ) {
+				continue;
+			}
+
+			$value = strtolower( (string) $data[ $key ] );
+			if ( in_array( $value, $express_values, true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Read the payment method id from the Store API request or classic POST.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param WP_REST_Request|null $request Optional Store API request.
+	 * @return string
+	 */
+	private function get_payment_method( $request ) {
+		if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) {
+			$method = $request->get_param( 'payment_method' );
+			return is_string( $method ) ? sanitize_text_field( $method ) : '';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
+		if ( ! isset( $_POST['payment_method'] ) ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
+		return sanitize_text_field( wp_unslash( $_POST['payment_method'] ) );
+	}
+
+	/**
+	 * Flatten Store API payment_data and relevant POST flags into a map.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param WP_REST_Request|null $request Optional Store API request.
+	 * @return array<string, string>
+	 */
+	private function get_payment_data_map( $request ) {
+		$map = array();
+
+		if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) {
+			$payment_data = $request->get_param( 'payment_data' );
+			if ( is_array( $payment_data ) ) {
+				foreach ( $payment_data as $entry ) {
+					if ( ! is_array( $entry ) || empty( $entry['key'] ) || ! is_string( $entry['key'] ) ) {
+						continue;
+					}
+
+					$key         = (string) $entry['key'];
+					$map[ $key ] = isset( $entry['value'] ) ? sanitize_text_field( (string) $entry['value'] ) : '';
+				}
+			}
+		}
+
+		$post_keys = array(
+			'paymentRequestType',
+			'payment_request_type',
+			'wc-stripe-is-express-checkout',
+			'is_express',
+		);
+
+		foreach ( $post_keys as $key ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
+			if ( ! isset( $_POST[ $key ] ) ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
+			$map[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Sanitize the visitor IP used for siteverify and rate limiting.
 	 *
 	 * @since 1.1.0
 	 *

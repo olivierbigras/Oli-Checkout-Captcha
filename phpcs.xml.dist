@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="Oli Checkout Captcha">
-	<description>WordPress coding standards for Oli Checkout Captcha.</description>
+	<description>WordPress-Extra coding standards for Oli Checkout Captcha.</description>
 
 	<file>.</file>
 
@@ -17,8 +17,9 @@
 	<arg value="sp"/>
 
 	<config name="minimum_supported_wp_version" value="6.0"/>
+	<config name="text_domain" value="oli-checkout-captcha"/>
 
-	<rule ref="WordPress">
+	<rule ref="WordPress-Extra">
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
 	</rule>
 

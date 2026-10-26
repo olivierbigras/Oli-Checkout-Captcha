@@ -2,10 +2,31 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.2.0 - 2026-10-26
+
+### Added
+
+- Classic shortcode checkout validation alongside WooCommerce block / Store API checkout.
+- Google reCAPTCHA v3 and optional Cloudflare Turnstile.
+- Server-side token verification for classic checkout and Store API place-order requests.
+- reCAPTCHA v3 score threshold setting.
+- Fail-closed option when the captcha provider cannot be reached.
+- Optional rate limiting of failed verification attempts (hashed IP, transients).
+- PHPUnit coverage for token verification with HTTP mocked.
+
+### Changed
+
+- Provider scripts load only on the checkout page (not order-pay or order-received).
+- Express / wallet payments are not intercepted by the captcha widget or server check.
+- Admin notices appear only on the plugin settings screen.
+- Removed `load_plugin_textdomain()` so WordPress.org can load translations automatically.
+- Documented Google reCAPTCHA and Cloudflare Turnstile in the readme External services section.
+
 ## 2026-10-23
 
-### Modifié
-- readme.txt : « Contributors » limité à bigrat95.
+### Changed
+
+- readme.txt: Contributors limited to bigrat95.
 
 ## 1.1.1 - 2026-10-21
 

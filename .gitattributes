@@ -19,4 +19,5 @@
 /package-lock.json export-ignore
 /npm-shrinkwrap.json export-ignore
 *.md export-ignore
+/CHANGELOG.md -export-ignore
 /*.sh export-ignore

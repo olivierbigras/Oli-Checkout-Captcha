@@ -334,3 +334,209 @@ if ( ! function_exists( 'plugins_url' ) ) {
 		return rtrim( plugin_dir_url( $file ), '/' ) . '/' . ltrim( (string) $path, '/' );
 	}
 }
+
+$GLOBALS['olic_test_http_requests']  = array();
+$GLOBALS['olic_test_http_response']  = null;
+$GLOBALS['olic_test_transients']     = array();
+
+if ( ! class_exists( 'WP_Error', false ) ) {
+	/**
+	 * Minimal WP_Error stand-in.
+	 */
+	class WP_Error {
+
+		/**
+		 * Error code.
+		 *
+		 * @var string
+		 */
+		public $code = '';
+
+		/**
+		 * Error message.
+		 *
+		 * @var string
+		 */
+		public $message = '';
+
+		/**
+		 * @param string $code    Error code.
+		 * @param string $message Error message.
+		 * @param mixed  $data    Unused.
+		 */
+		public function __construct( $code = '', $message = '', $data = '' ) {
+			unset( $data );
+			$this->code    = (string) $code;
+			$this->message = (string) $message;
+		}
+
+		/**
+		 * @return string
+		 */
+		public function get_error_message() {
+			return $this->message;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * @param mixed $thing Value to test.
+	 * @return bool
+	 */
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_post' ) ) {
+	/**
+	 * @param string               $url  Request URL.
+	 * @param array<string, mixed> $args Request args.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	function wp_remote_post( $url, $args = array() ) {
+		$GLOBALS['olic_test_http_requests'][] = array(
+			'url'  => $url,
+			'args' => $args,
+		);
+
+		if ( is_callable( $GLOBALS['olic_test_http_response'] ) ) {
+			return call_user_func( $GLOBALS['olic_test_http_response'], $url, $args );
+		}
+
+		if ( null === $GLOBALS['olic_test_http_response'] ) {
+			return new WP_Error( 'http_request_failed', 'No mocked HTTP response.' );
+		}
+
+		return $GLOBALS['olic_test_http_response'];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * @param array<string, mixed>|WP_Error $response HTTP response.
+	 * @return string
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) || ! isset( $response['body'] ) ) {
+			return '';
+		}
+
+		return (string) $response['body'];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	/**
+	 * @param array<string, mixed>|WP_Error $response HTTP response.
+	 * @return int
+	 */
+	function wp_remote_retrieve_response_code( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) ) {
+			return 0;
+		}
+
+		if ( isset( $response['response']['code'] ) ) {
+			return (int) $response['response']['code'];
+		}
+
+		return 0;
+	}
+}
+
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	/**
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function esc_html__( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * @param string $value Raw value.
+	 * @return string
+	 */
+	function sanitize_text_field( $value ) {
+		return trim( strip_tags( (string) $value ) );
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * @param mixed $value Value to unslash.
+	 * @return mixed
+	 */
+	function wp_unslash( $value ) {
+		if ( is_string( $value ) ) {
+			return stripslashes( $value );
+		}
+
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'sanitize_key' ) ) {
+	/**
+	 * @param string $key Key.
+	 * @return string
+	 */
+	function sanitize_key( $key ) {
+		$key = strtolower( (string) $key );
+		return preg_replace( '/[^a-z0-9_\-]/', '', $key );
+	}
+}
+
+if ( ! function_exists( 'get_transient' ) ) {
+	/**
+	 * @param string $transient Transient name.
+	 * @return mixed
+	 */
+	function get_transient( $transient ) {
+		return array_key_exists( $transient, $GLOBALS['olic_test_transients'] )
+			? $GLOBALS['olic_test_transients'][ $transient ]
+			: false;
+	}
+}
+
+if ( ! function_exists( 'set_transient' ) ) {
+	/**
+	 * @param string $transient Transient name.
+	 * @param mixed  $value     Value.
+	 * @param int    $expiration Expiration.
+	 * @return bool
+	 */
+	function set_transient( $transient, $value, $expiration = 0 ) {
+		unset( $expiration );
+		$GLOBALS['olic_test_transients'][ $transient ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * @param string $transient Transient name.
+	 * @return bool
+	 */
+	function delete_transient( $transient ) {
+		unset( $GLOBALS['olic_test_transients'][ $transient ] );
+		return true;
+	}
+}
