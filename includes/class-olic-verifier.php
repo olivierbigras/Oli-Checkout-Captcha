@@ -54,7 +54,7 @@ class Olic_Verifier {
 	 * @since 1.2.0
 	 * @var string
 	 */
-	const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+	const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'; // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Documented Turnstile siteverify API, not a CDN offload.
 
 	/**
 	 * Default reCAPTCHA v3 action name.

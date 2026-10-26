@@ -301,17 +301,17 @@ class Olic_Checkout_Captcha {
 	 *
 	 * @param string   $option_name Option name.
 	 * @param callable $sanitize    Sanitization callback.
-	 * @param string   $default     Default value.
+	 * @param string   $default_value Default value.
 	 * @return void
 	 */
-	private function register_string_setting( $option_name, $sanitize, $default ) {
+	private function register_string_setting( $option_name, $sanitize, $default_value ) {
 		register_setting(
 			'olic_settings',
 			$option_name,
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => $sanitize,
-				'default'           => $default,
+				'default'           => $default_value,
 				'show_in_rest'      => false,
 			)
 		);
@@ -418,7 +418,7 @@ class Olic_Checkout_Captcha {
 		);
 		$turnstile_link = sprintf(
 			'<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
-			esc_url( 'https://dash.cloudflare.com/?to=/:account/turnstile' ),
+			esc_url( 'https://dash.cloudflare.com/?to=/:account/turnstile' ), // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Settings link to the documented Turnstile dashboard.
 			esc_html__( 'Cloudflare Turnstile', 'oli-checkout-captcha' )
 		);
 
@@ -783,7 +783,7 @@ class Olic_Checkout_Captcha {
 		if ( Olic_Verifier::PROVIDER_TURNSTILE === $provider ) {
 			wp_enqueue_script(
 				'olic-turnstile',
-				'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=olicCaptchaOnLoad&render=explicit',
+				'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=olicCaptchaOnLoad&render=explicit', // phpcs:ignore PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- Documented Turnstile widget script, loaded only on checkout.
 				array( 'olic-checkout' ),
 				OLIC_VERSION,
 				array(
@@ -996,12 +996,12 @@ class Olic_Checkout_Captcha {
 	 */
 	private function get_verify_settings() {
 		return array(
-			'provider'         => $this->get_provider(),
-			'secret'           => $this->get_stored_option( 'olic_secret_key' ),
-			'remote_ip'        => $this->get_remote_ip(),
-			'score_threshold'  => $this->get_score_threshold(),
-			'expected_action'  => self::CAPTCHA_ACTION,
-			'fail_closed'      => $this->is_fail_closed(),
+			'provider'        => $this->get_provider(),
+			'secret'          => $this->get_stored_option( 'olic_secret_key' ),
+			'remote_ip'       => $this->get_remote_ip(),
+			'score_threshold' => $this->get_score_threshold(),
+			'expected_action' => self::CAPTCHA_ACTION,
+			'fail_closed'     => $this->is_fail_closed(),
 		);
 	}
 
@@ -1022,12 +1022,12 @@ class Olic_Checkout_Captcha {
 	 * @since 1.2.0
 	 *
 	 * @param string $option_name Option name.
-	 * @param string $default     Default value.
+	 * @param string $default_value Default value.
 	 * @return string
 	 */
-	private function get_stored_option( $option_name, $default = '' ) {
-		$value = get_option( $option_name, $default );
-		return is_string( $value ) ? $value : $default;
+	private function get_stored_option( $option_name, $default_value = '' ) {
+		$value = get_option( $option_name, $default_value );
+		return is_string( $value ) ? $value : $default_value;
 	}
 
 	/**
