@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Oli Checkout Captcha wc.wcBlocksData warning probe</title>
+</head>
+<body>
+	<div class="wp-block-woocommerce-checkout wc-block-checkout"></div>
+	<input type="hidden" id="olic-captcha-token" value="">
+	<pre id="results"></pre>
+	<script>
+	(function () {
+		window.__olicProbe = {
+			warnings: [],
+			extensionCalls: [],
+			accesses: [],
+			apiFetchPosts: []
+		};
+
+		var subscribers = [];
+		var beforeProcessing = false;
+		var checkoutDispatch = {
+			setExtensionData: function (namespace, data) {
+				window.__olicProbe.extensionCalls.push({ api: 'setExtensionData', namespace: namespace, data: data });
+				subscribers.slice().forEach(function (fn) { fn(); });
+			},
+			__internalSetExtensionData: function (namespace, data) {
+				window.__olicProbe.extensionCalls.push({ api: '__internalSetExtensionData', namespace: namespace, data: data });
+				subscribers.slice().forEach(function (fn) { fn(); });
+			}
+		};
+
+		var wcBlocksData = new Proxy(
+			{ CHECKOUT_STORE_KEY: 'wc/store/checkout' },
+			{
+				get: function (target, prop) {
+					window.__olicProbe.accesses.push(String(prop));
+					window.__olicProbe.warnings.push(
+						'[WooCommerce] An inline or unknown script accessed wc.wcBlocksData without proper dependency declaration'
+					);
+					return target[prop];
+				}
+			}
+		);
+
+		var apiFetchMiddlewares = [];
+		window.olicConfig = {
+			namespace: 'oli-checkout-captcha',
+			provider: 'turnstile',
+			siteKey: '1x00000000000000000000AA'
+		};
+		window.wc = { wcBlocksData: wcBlocksData };
+		window.wp = {
+			data: {
+				dispatch: function (store) {
+					return store === 'wc/store/checkout' ? checkoutDispatch : {};
+				},
+				select: function () {
+					return { isBeforeProcessing: function () { return beforeProcessing; } };
+				},
+				subscribe: function (fn) {
+					subscribers.push(fn);
+					return function () {};
+				}
+			},
+			apiFetch: {
+				use: function (middleware) {
+					apiFetchMiddlewares.push(middleware);
+				}
+			}
+		};
+
+		// WooCommerce 11.2.1 order-attribution.js: first checkout-store notification
+		// calls updateCheckoutBlockData, which reads window.wc.wcBlocksData.
+		var oaDone = false;
+		subscribers.push(function () {
+			if (oaDone) {
+				return;
+			}
+			oaDone = true;
+			if (window.wp && window.wp.data && window.wp.data.dispatch && window.wc && window.wc.wcBlocksData) {
+				window.wp.data
+					.dispatch(window.wc.wcBlocksData.CHECKOUT_STORE_KEY)
+					.setExtensionData('woocommerce/order-attribution', { source_type: 'typein' }, true);
+			}
+		});
+
+		window.__olicProbe.runCheckoutPost = function () {
+			var options = {
+				path: '/wp-json/wc/store/v1/checkout',
+				method: 'POST',
+				data: { billing_address: {} }
+			};
+			apiFetchMiddlewares[0](options, function (nextOptions) {
+				window.__olicProbe.apiFetchPosts.push(nextOptions);
+				return Promise.resolve({ ok: true });
+			});
+		};
+
+		window.__olicProbe.setBeforeProcessing = function (value) {
+			beforeProcessing = !!value;
+			subscribers.slice().forEach(function (fn) { fn(); });
+		};
+	})();
+	</script>
+	<script src="../../js/checkout.js"></script>
+	<script>
+	(function () {
+		window.olicCaptchaCallback('browser-token');
+		var afterRefresh = {
+			warnings: window.__olicProbe.warnings.slice(),
+			accesses: window.__olicProbe.accesses.slice(),
+			extensionCalls: window.__olicProbe.extensionCalls.slice(),
+			field: document.getElementById('olic-captcha-token').value
+		};
+		window.__olicProbe.runCheckoutPost();
+		var afterPost = {
+			warnings: window.__olicProbe.warnings.slice(),
+			accesses: window.__olicProbe.accesses.slice(),
+			token: window.__olicProbe.apiFetchPosts[0].data.extensions['oli-checkout-captcha'].token
+		};
+
+		window.__olicResults = {
+			afterTokenRefresh: afterRefresh,
+			afterPlaceOrderPost: afterPost
+		};
+		document.getElementById('results').textContent = JSON.stringify(window.__olicResults, null, 2);
+	})();
+	</script>
+</body>
+</html>

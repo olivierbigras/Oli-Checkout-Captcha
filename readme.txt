@@ -4,7 +4,7 @@ Tags: recaptcha, turnstile, woocommerce, checkout, spam
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,11 @@ You are responsible for mentioning the selected captcha provider in your own sit
 
 == Changelog ==
 
+= 1.2.4 =
+* Send the block-checkout captcha token only when the order is placed, so WooCommerce order-attribution does not warn about wc.wcBlocksData on every page load.
+* Enqueue Google reCAPTCHA api.js without a ?ver= query argument.
+* Ship a complete languages/oli-checkout-captcha.pot generated with wp i18n make-pot.
+
 = 1.2.3 =
 * Use WooCommerce's public setExtensionData on block checkout, with a fallback to __internalSetExtensionData on older WooCommerce.
 * Declare wp-data and wc-blocks-data-store as script dependencies on block checkout only when those handles are registered.
@@ -202,6 +207,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.2.4 =
+Sends the block checkout captcha token only when placing the order, avoiding a WooCommerce wc.wcBlocksData console warning on page load.
 
 = 1.2.3 =
 Uses the public WooCommerce checkout store API, declares block checkout script dependencies only when registered, and loads Turnstile without a version query argument.

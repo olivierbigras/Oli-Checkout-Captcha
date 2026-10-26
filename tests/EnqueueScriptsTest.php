@@ -199,15 +199,15 @@ namespace {
 		}
 
 		/**
-		 * reCAPTCHA scripts keep a plugin version (Turnstile-only change).
+		 * reCAPTCHA api.js is also enqueued without a ?ver= query argument.
 		 *
 		 * @return void
 		 */
-		public function test_recaptcha_script_keeps_plugin_version() {
+		public function test_recaptcha_api_js_has_null_version() {
 			$this->plugin->enqueue_scripts();
 
 			$this->assertArrayHasKey( 'olic-recaptcha', $GLOBALS['olic_test_registered_scripts'] );
-			$this->assertSame( OLIC_VERSION, $GLOBALS['olic_test_registered_scripts']['olic-recaptcha']['ver'] );
+			$this->assertNull( $GLOBALS['olic_test_registered_scripts']['olic-recaptcha']['ver'] );
 		}
 
 		/**

@@ -6,6 +6,9 @@
 	var renderedWidgetEl = null;
 	var tokenRefreshTimer = null;
 	var wooEventsBound = false;
+	var latestToken = '';
+	var blockTokenTransportBound = false;
+	var flushingTokenToStore = false;
 	var EXPRESS_SELECTORS = [
 		'.wc-block-components-express-payment',
 		'.wc-block-components-express-payment-continue-rule',
@@ -29,16 +32,21 @@
 	}
 
 	function persistToken(token) {
+		latestToken = token || '';
+
 		var field = document.getElementById('olic-captcha-token');
 		if (field) {
-			field.value = token || '';
+			field.value = latestToken;
+		}
+	}
+
+	function getPendingToken() {
+		if (latestToken) {
+			return latestToken;
 		}
 
-		try {
-			setCheckoutExtensionData(getNamespace(), { token: token || '' });
-		} catch (e) {
-			return;
-		}
+		var field = document.getElementById('olic-captcha-token');
+		return field && field.value ? field.value : '';
 	}
 
 	function setCheckoutExtensionData(namespace, data) {
@@ -59,6 +67,109 @@
 		if (typeof dispatch.__internalSetExtensionData === 'function') {
 			dispatch.__internalSetExtensionData(namespace, data);
 		}
+	}
+
+	function flushTokenToCheckoutStore() {
+		if (flushingTokenToStore) {
+			return;
+		}
+
+		flushingTokenToStore = true;
+		try {
+			setCheckoutExtensionData(getNamespace(), { token: getPendingToken() });
+		} catch (e) {
+			return;
+		} finally {
+			flushingTokenToStore = false;
+		}
+	}
+
+	function isStoreApiCheckoutPost(options) {
+		if (!options) {
+			return false;
+		}
+
+		var path = options.path || options.url || '';
+		if (path.indexOf('/wc/store') === -1 || path.indexOf('/checkout') === -1) {
+			return false;
+		}
+
+		var method = (options.method || 'GET').toUpperCase();
+		return method === 'POST';
+	}
+
+	function withCaptchaExtension(options) {
+		var data = options.data;
+
+		if (data == null) {
+			data = {};
+		} else if (typeof data === 'string') {
+			try {
+				data = JSON.parse(data);
+			} catch (e) {
+				return options;
+			}
+		} else if (typeof data !== 'object') {
+			return options;
+		}
+
+		if (!data.extensions || typeof data.extensions !== 'object') {
+			data.extensions = {};
+		}
+
+		data.extensions[getNamespace()] = { token: getPendingToken() };
+		options.data = data;
+		return options;
+	}
+
+	function bindApiFetchTokenMiddleware() {
+		if (typeof wp === 'undefined' || !wp.apiFetch || typeof wp.apiFetch.use !== 'function') {
+			return false;
+		}
+
+		wp.apiFetch.use(function (options, next) {
+			if (isStoreApiCheckoutPost(options)) {
+				options = withCaptchaExtension(options);
+			}
+			return next(options);
+		});
+
+		return true;
+	}
+
+	function bindBeforeProcessingFlush() {
+		if (typeof wp === 'undefined' || !wp.data || !wp.data.subscribe || !wp.data.select) {
+			return;
+		}
+
+		var wasBeforeProcessing = false;
+
+		wp.data.subscribe(function () {
+			var select = wp.data.select('wc/store/checkout');
+			if (!select || typeof select.isBeforeProcessing !== 'function') {
+				return;
+			}
+
+			var isBefore = !!select.isBeforeProcessing();
+			if (isBefore && !wasBeforeProcessing) {
+				flushTokenToCheckoutStore();
+			}
+			wasBeforeProcessing = isBefore;
+		});
+	}
+
+	function bindBlockCheckoutTokenTransport() {
+		if (blockTokenTransportBound) {
+			return;
+		}
+
+		blockTokenTransportBound = true;
+
+		if (bindApiFetchTokenMiddleware()) {
+			return;
+		}
+
+		bindBeforeProcessingFlush();
 	}
 
 	window.olicCaptchaCallback = function (token) {
@@ -416,6 +527,7 @@
 	function maybeRender() {
 		bindClassicSubmit();
 		bindClassicCheckoutEvents();
+		bindBlockCheckoutTokenTransport();
 
 		if (getProvider() === 'recaptcha_v3') {
 			startV3();
@@ -435,6 +547,8 @@
 	}
 
 	function init() {
+		bindBlockCheckoutTokenTransport();
+
 		var attempts = 0;
 		var maxAttempts = 30;
 

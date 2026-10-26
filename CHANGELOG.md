@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.2.4 - 2026-10-26
+
+### Fixed
+
+- Keep the captcha token in memory and the classic hidden field; write it to the Store API only when the order is placed (`wp.apiFetch` checkout POST, with an `isBeforeProcessing` + `setExtensionData` fallback). This stops WooCommerce order-attribution from accessing `wc.wcBlocksData` on every token refresh.
+- Enqueue Google reCAPTCHA `api.js` with a `null` version so WordPress does not append `?ver=`.
+- Regenerate `languages/oli-checkout-captcha.pot` with WP-CLI `i18n make-pot` so the release ZIP ships the plugin's translatable strings.
+
 ## 1.2.3 - 2026-10-26
 
 ### Fixed

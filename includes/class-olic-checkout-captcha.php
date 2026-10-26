@@ -799,7 +799,7 @@ class Olic_Checkout_Captcha {
 				'olic-recaptcha',
 				'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( $this->get_stored_option( 'olic_site_key' ) ),
 				array( 'olic-checkout' ),
-				OLIC_VERSION,
+				null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Google reCAPTCHA api.js also rejects unknown query arguments such as ?ver=.
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -812,7 +812,7 @@ class Olic_Checkout_Captcha {
 			'olic-recaptcha',
 			'https://www.google.com/recaptcha/api.js?onload=olicCaptchaOnLoad&render=explicit',
 			array( 'olic-checkout' ),
-			OLIC_VERSION,
+			null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Google reCAPTCHA api.js also rejects unknown query arguments such as ?ver=.
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
