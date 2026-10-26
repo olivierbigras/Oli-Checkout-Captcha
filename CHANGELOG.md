@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.2.1 - 2026-10-26
+
+### Fixed
+
+- Re-render the reCAPTCHA and Turnstile widgets after WooCommerce classic checkout replaces the payment fragment (`updated_checkout`).
+- Reset the captcha token after a classic checkout error so a fresh token can be submitted.
+
 ## 1.2.0 - 2026-10-26
 
 ### Added

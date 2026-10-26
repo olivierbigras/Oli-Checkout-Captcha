@@ -3,7 +3,9 @@
 
 	var rendered = false;
 	var widgetId = null;
+	var renderedWidgetEl = null;
 	var tokenRefreshTimer = null;
+	var wooEventsBound = false;
 	var EXPRESS_SELECTORS = [
 		'.wc-block-components-express-payment',
 		'.wc-block-components-express-payment-continue-rule',
@@ -75,6 +77,48 @@
 		return false;
 	}
 
+	function isBlockCheckout() {
+		return !!document.querySelector('.wp-block-woocommerce-checkout, .wc-block-checkout');
+	}
+
+	function isClassicCheckout() {
+		return !!document.querySelector('form.checkout');
+	}
+
+	function getWidgetEl() {
+		return document.getElementById('olic-captcha-widget');
+	}
+
+	function isSameRenderedWidget() {
+		var widget = getWidgetEl();
+		return !!(rendered && widget && widget === renderedWidgetEl);
+	}
+
+	function markRendered(widget, id) {
+		rendered = true;
+		widgetId = id;
+		renderedWidgetEl = widget;
+		if (widget && widget.setAttribute) {
+			widget.setAttribute('data-olic-rendered', '1');
+		}
+	}
+
+	function isContainerUsed(widget) {
+		if (!widget) {
+			return false;
+		}
+
+		if (widget === renderedWidgetEl && rendered) {
+			return true;
+		}
+
+		if (widget.getAttribute && widget.getAttribute('data-olic-rendered') === '1') {
+			return true;
+		}
+
+		return !!(widget.querySelector && widget.querySelector('iframe'));
+	}
+
 	function findBlockTarget() {
 		var placeOrder = document.querySelector('.wc-block-components-checkout-place-order-button, .wc-block-checkout__actions');
 		if (placeOrder && !isInsideExpress(placeOrder)) {
@@ -132,22 +176,39 @@
 		return container;
 	}
 
-	function renderVisibleWidget() {
-		if (rendered) {
-			return;
+	function unmountWidget() {
+		var provider = getProvider();
+
+		if (widgetId !== null) {
+			try {
+				if (provider === 'turnstile' && typeof turnstile !== 'undefined' && typeof turnstile.remove === 'function') {
+					turnstile.remove(widgetId);
+				} else if (provider !== 'recaptcha_v3' && typeof grecaptcha !== 'undefined' && typeof grecaptcha.reset === 'function') {
+					grecaptcha.reset(widgetId);
+				}
+			} catch (e) {
+				// The previous widget node may already have been replaced by WooCommerce.
+			}
 		}
 
+		widgetId = null;
+		rendered = false;
+		renderedWidgetEl = null;
+		persistToken('');
+	}
+
+	function renderVisibleWidget() {
 		var config = getConfig();
 		if (!config || !config.siteKey) {
 			return;
 		}
 
 		var provider = getProvider();
-		var widget = document.getElementById('olic-captcha-widget');
+		var widget = getWidgetEl();
 		if (!widget) {
-			if (document.querySelector('.wp-block-woocommerce-checkout, .wc-block-checkout')) {
+			if (isBlockCheckout()) {
 				ensureBlockContainer();
-				widget = document.getElementById('olic-captcha-widget');
+				widget = getWidgetEl();
 			}
 		}
 
@@ -159,19 +220,27 @@
 			return;
 		}
 
+		if (isContainerUsed(widget)) {
+			rendered = true;
+			renderedWidgetEl = widget;
+			return;
+		}
+
 		try {
 			if (provider === 'turnstile') {
 				if (typeof turnstile === 'undefined' || typeof turnstile.render !== 'function') {
 					return;
 				}
-				widgetId = turnstile.render(widget, {
-					sitekey: config.siteKey,
-					theme: config.theme || 'auto',
-					callback: window.olicCaptchaCallback,
-					'expired-callback': window.olicCaptchaExpired,
-					'error-callback': window.olicCaptchaError
-				});
-				rendered = true;
+				markRendered(
+					widget,
+					turnstile.render(widget, {
+						sitekey: config.siteKey,
+						theme: config.theme || 'auto',
+						callback: window.olicCaptchaCallback,
+						'expired-callback': window.olicCaptchaExpired,
+						'error-callback': window.olicCaptchaError
+					})
+				);
 				return;
 			}
 
@@ -179,19 +248,56 @@
 				return;
 			}
 
-			widgetId = grecaptcha.render(widget, {
-				sitekey: config.siteKey,
-				theme: config.theme === 'auto' ? 'light' : (config.theme || 'light'),
-				callback: 'olicCaptchaCallback',
-				'expired-callback': 'olicCaptchaExpired',
-				'error-callback': 'olicCaptchaError'
-			});
-			rendered = true;
+			markRendered(
+				widget,
+				grecaptcha.render(widget, {
+					sitekey: config.siteKey,
+					theme: config.theme === 'auto' ? 'light' : (config.theme || 'light'),
+					callback: 'olicCaptchaCallback',
+					'expired-callback': 'olicCaptchaExpired',
+					'error-callback': 'olicCaptchaError'
+				})
+			);
 		} catch (e) {
 			if (e.message && e.message.indexOf('already been rendered') > -1) {
-				rendered = true;
+				markRendered(widget, widgetId);
 			}
 		}
+	}
+
+	function remountVisibleWidget() {
+		if (isSameRenderedWidget()) {
+			return;
+		}
+
+		unmountWidget();
+		renderVisibleWidget();
+	}
+
+	function resetAfterError() {
+		persistToken('');
+
+		if (getProvider() === 'recaptcha_v3') {
+			refreshV3Token();
+			return;
+		}
+
+		if (isSameRenderedWidget() && widgetId !== null) {
+			try {
+				if (getProvider() === 'turnstile' && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
+					turnstile.reset(widgetId);
+					return;
+				}
+				if (typeof grecaptcha !== 'undefined' && typeof grecaptcha.reset === 'function') {
+					grecaptcha.reset(widgetId);
+					return;
+				}
+			} catch (e) {
+				// Fall through to a full remount when the live widget is gone.
+			}
+		}
+
+		remountVisibleWidget();
 	}
 
 	function refreshV3Token() {
@@ -214,7 +320,7 @@
 	}
 
 	function startV3() {
-		if (rendered) {
+		if (rendered && isSameRenderedWidget()) {
 			return;
 		}
 
@@ -222,9 +328,13 @@
 			return;
 		}
 
-		ensureBlockContainer();
+		if (isBlockCheckout()) {
+			ensureBlockContainer();
+		}
+
 		refreshV3Token();
 		rendered = true;
+		renderedWidgetEl = getWidgetEl();
 
 		if (tokenRefreshTimer) {
 			window.clearInterval(tokenRefreshTimer);
@@ -232,10 +342,40 @@
 		tokenRefreshTimer = window.setInterval(refreshV3Token, 90 * 1000);
 	}
 
+	function onUpdatedCheckout() {
+		if (isBlockCheckout() && !isClassicCheckout()) {
+			return;
+		}
+
+		persistToken('');
+
+		if (getProvider() === 'recaptcha_v3') {
+			refreshV3Token();
+			return;
+		}
+
+		remountVisibleWidget();
+	}
+
+	function bindClassicCheckoutEvents() {
+		if (wooEventsBound || typeof jQuery === 'undefined') {
+			return;
+		}
+
+		wooEventsBound = true;
+
+		jQuery(document.body).on('updated_checkout', onUpdatedCheckout);
+		jQuery(document.body).on('checkout_error', resetAfterError);
+	}
+
 	window.olicCaptchaOnLoad = function () {
 		window.setTimeout(function () {
 			if (getProvider() === 'recaptcha_v3') {
 				startV3();
+				return;
+			}
+			if (isClassicCheckout() && !isSameRenderedWidget()) {
+				remountVisibleWidget();
 				return;
 			}
 			renderVisibleWidget();
@@ -258,23 +398,38 @@
 		});
 	}
 
+	function maybeRender() {
+		bindClassicSubmit();
+		bindClassicCheckoutEvents();
+
+		if (getProvider() === 'recaptcha_v3') {
+			startV3();
+			return;
+		}
+
+		if (isSameRenderedWidget()) {
+			return;
+		}
+
+		if (isClassicCheckout()) {
+			remountVisibleWidget();
+			return;
+		}
+
+		renderVisibleWidget();
+	}
+
 	function init() {
 		var attempts = 0;
 		var maxAttempts = 30;
 
 		function tryRender() {
-			if (rendered || attempts >= maxAttempts) {
+			if (attempts >= maxAttempts) {
 				return;
 			}
 			attempts += 1;
 
-			if (getProvider() === 'recaptcha_v3') {
-				startV3();
-			} else {
-				renderVisibleWidget();
-			}
-
-			bindClassicSubmit();
+			maybeRender();
 
 			if (!rendered) {
 				window.setTimeout(tryRender, 500);
@@ -285,15 +440,8 @@
 
 		if (typeof MutationObserver !== 'undefined') {
 			var observer = new MutationObserver(function () {
-				if (!rendered) {
-					if (getProvider() === 'recaptcha_v3') {
-						startV3();
-					} else {
-						renderVisibleWidget();
-					}
-				}
-				bindClassicSubmit();
-				if (rendered) {
+				maybeRender();
+				if (rendered && isBlockCheckout() && !isClassicCheckout()) {
 					observer.disconnect();
 				}
 			});
@@ -309,17 +457,15 @@
 		if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
 			var unsubscribe = wp.data.subscribe(function () {
 				if (!rendered) {
-					if (getProvider() === 'recaptcha_v3') {
-						startV3();
-					} else {
-						renderVisibleWidget();
-					}
+					maybeRender();
 				}
-				if (rendered && unsubscribe) {
+				if (rendered && unsubscribe && isBlockCheckout() && !isClassicCheckout()) {
 					unsubscribe();
 				}
 			});
 		}
+
+		bindClassicCheckoutEvents();
 	}
 
 	if (document.readyState === 'loading') {

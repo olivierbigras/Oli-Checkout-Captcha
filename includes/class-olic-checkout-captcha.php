@@ -760,7 +760,7 @@ class Olic_Checkout_Captcha {
 		wp_register_script(
 			'olic-checkout',
 			plugins_url( 'js/checkout.js', OLIC_PLUGIN_FILE ),
-			array(),
+			array( 'jquery' ),
 			OLIC_VERSION,
 			true
 		);

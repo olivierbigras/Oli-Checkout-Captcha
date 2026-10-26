@@ -4,7 +4,7 @@ Tags: recaptcha, turnstile, woocommerce, checkout, spam
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -152,6 +152,10 @@ You are responsible for mentioning the selected captcha provider in your own sit
 
 == Changelog ==
 
+= 1.2.1 =
+* Re-render reCAPTCHA and Turnstile after WooCommerce classic checkout replaces the payment fragment.
+* Reset the captcha token after a classic checkout error so a fresh token can be submitted.
+
 = 1.2.0 =
 * Added classic checkout support alongside the checkout block.
 * Added reCAPTCHA v3 and optional Cloudflare Turnstile.
@@ -187,6 +191,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+Fixes an empty captcha widget on classic shortcode checkout after WooCommerce refreshes the payment section.
 
 = 1.2.0 =
 Adds classic checkout, reCAPTCHA v3, Turnstile, score threshold, fail-closed, and optional rate limiting.
