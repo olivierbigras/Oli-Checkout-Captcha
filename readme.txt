@@ -4,7 +4,7 @@ Tags: recaptcha, turnstile, woocommerce, checkout, spam
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -149,10 +149,13 @@ You are responsible for mentioning the selected captcha provider in your own sit
 
 1. Settings page
 2. Captcha on checkout
-3. Captcha on the block checkout.
-4. Checkout blocked with "Please complete the captcha verification." when the captcha is not completed.
+3. Captcha on the block checkout
+4. Checkout blocked with "Please complete the captcha verification." when the captcha is not completed
 
 == Changelog ==
+
+= 1.2.5 - 2026-10-26 =
+* Uninstall now removes the rate-limit transients.
 
 = 1.2.4 =
 * Send the block-checkout captcha token only when the order is placed, so WooCommerce order-attribution does not warn about wc.wcBlocksData on every page load.
@@ -207,6 +210,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.2.5 =
+Uninstall now removes the rate-limit transients.
 
 = 1.2.4 =
 Sends the block checkout captcha token only when placing the order, avoiding a WooCommerce wc.wcBlocksData console warning on page load.

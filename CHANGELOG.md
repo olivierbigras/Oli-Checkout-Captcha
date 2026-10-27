@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.2.5 - 2026-10-26
+
+### Corrigé
+
+- La désinstallation supprime désormais les transients de limitation de débit.
+
 ## 1.2.4 - 2026-10-26
 
 ### Fixed

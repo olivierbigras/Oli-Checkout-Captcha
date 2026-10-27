@@ -22,7 +22,7 @@ class ReadmeScreenshotsTest extends TestCase {
 		$this->assertNotFalse( $readme );
 
 		$this->assertMatchesRegularExpression(
-			'/== Screenshots ==\s+1\. Settings page\s+2\. Captcha on checkout\s+3\. Captcha on the block checkout\.\s+4\. Checkout blocked with "Please complete the captcha verification\." when the captcha is not completed\./',
+			'/== Screenshots ==\s+1\. Settings page\s+2\. Captcha on checkout\s+3\. Captcha on the block checkout\s+4\. Checkout blocked with "Please complete the captcha verification\." when the captcha is not completed\n/',
 			$readme
 		);
 	}

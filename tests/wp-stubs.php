@@ -77,6 +77,81 @@ if ( ! class_exists( 'olic_test_wpdb', false ) ) {
 
 			return null;
 		}
+
+		/**
+		 * Escape LIKE wildcards the same way WordPress does.
+		 *
+		 * @param string $text Raw fragment.
+		 * @return string
+		 */
+		public function esc_like( $text ) {
+			return addcslashes( (string) $text, '_%\\' );
+		}
+
+		/**
+		 * Run a prepared DELETE against the in-memory options table.
+		 *
+		 * @param string $query Prepared SQL.
+		 * @return int Number of deleted rows.
+		 */
+		public function query( $query ) {
+			if ( ! preg_match( '/DELETE FROM\s+(\S+)\s+WHERE\s+(.+)/is', $query, $matches ) ) {
+				return 0;
+			}
+
+			if ( $this->options !== $matches[1] ) {
+				return 0;
+			}
+
+			if ( ! preg_match_all( "/option_name LIKE '((?:[^'\\\\]|\\\\.)*)'/", $matches[2], $like_matches ) ) {
+				return 0;
+			}
+
+			$deleted = 0;
+			foreach ( array_keys( $GLOBALS['olic_test_options'] ) as $name ) {
+				foreach ( $like_matches[1] as $pattern ) {
+					if ( $this->like_match( $name, stripslashes( $pattern ) ) ) {
+						unset( $GLOBALS['olic_test_options'][ $name ] );
+						++$deleted;
+						break;
+					}
+				}
+			}
+
+			return $deleted;
+		}
+
+		/**
+		 * Match a value against a SQL LIKE pattern that uses \ as escape.
+		 *
+		 * @param string $value   Option name.
+		 * @param string $pattern LIKE pattern.
+		 * @return bool
+		 */
+		private function like_match( $value, $pattern ) {
+			$regex = '';
+			$length = strlen( $pattern );
+
+			for ( $i = 0; $i < $length; $i++ ) {
+				$char = $pattern[ $i ];
+				if ( '\\' === $char && isset( $pattern[ $i + 1 ] ) ) {
+					$regex .= preg_quote( $pattern[ $i + 1 ], '/' );
+					++$i;
+					continue;
+				}
+				if ( '%' === $char ) {
+					$regex .= '.*';
+					continue;
+				}
+				if ( '_' === $char ) {
+					$regex .= '.';
+					continue;
+				}
+				$regex .= preg_quote( $char, '/' );
+			}
+
+			return (bool) preg_match( '/^' . $regex . '$/', $value );
+		}
 	}
 }
 
@@ -544,8 +619,11 @@ if ( ! function_exists( 'set_transient' ) ) {
 	 * @return bool
 	 */
 	function set_transient( $transient, $value, $expiration = 0 ) {
-		unset( $expiration );
-		$GLOBALS['olic_test_transients'][ $transient ] = $value;
+		$GLOBALS['olic_test_transients'][ $transient ]                  = $value;
+		$GLOBALS['olic_test_options'][ '_transient_' . $transient ]     = $value;
+		if ( (int) $expiration > 0 ) {
+			$GLOBALS['olic_test_options'][ '_transient_timeout_' . $transient ] = time() + (int) $expiration;
+		}
 		return true;
 	}
 }
@@ -557,6 +635,8 @@ if ( ! function_exists( 'delete_transient' ) ) {
 	 */
 	function delete_transient( $transient ) {
 		unset( $GLOBALS['olic_test_transients'][ $transient ] );
+		unset( $GLOBALS['olic_test_options'][ '_transient_' . $transient ] );
+		unset( $GLOBALS['olic_test_options'][ '_transient_timeout_' . $transient ] );
 		return true;
 	}
 }
