@@ -89,7 +89,7 @@ class Oli_OCC_Checkout_Captcha {
 
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
-		add_filter( 'option_page_capability_olic_settings', array( $this, 'get_settings_capability' ) );
+		add_filter( 'option_page_capability_oli_occ_settings', array( $this, 'get_settings_capability' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( OLI_OCC_PLUGIN_FILE ), array( $this, 'add_settings_link' ) );
 
 		if ( ! class_exists( 'WooCommerce' ) ) {

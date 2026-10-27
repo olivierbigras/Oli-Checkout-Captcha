@@ -4,7 +4,7 @@ Tags: recaptcha, turnstile, woocommerce, checkout, spam
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,10 @@ You are responsible for mentioning the selected captcha provider in your own sit
 
 == Changelog ==
 
+= 1.2.7 - 2026-10-27 =
+* Fix: the settings page capability filter now uses the renamed settings group (`option_page_capability_oli_occ_settings`). In 1.2.6 it was still attached to the old group name, which WordPress no longer fires, so saving went through the default `options.php` check instead of the plugin's own capability callback. No alias is kept: this is a WordPress core filter whose name follows the settings group, and the old name is no longer fired.
+* Tests: fail if an `olic` occurrence appears outside the documented migration, uninstall and deprecated-filter code.
+
 = 1.2.6 - 2026-10-27 =
 * Renamed the internal prefix from `olic` to `oli_occ` (functions, classes, constants, options, transients, hooks, script handles, field names and JavaScript globals).
 * Settings and live rate-limit counters are migrated once to the new names on activation or update, without loss; old rows are deleted only after a verified copy, and reads fall back to them until then.
@@ -219,6 +223,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.2.7 =
+Fixes the settings page capability after the 1.2.6 prefix rename. No settings change.
 
 = 1.2.6 =
 Internal prefix renamed to oli_occ. Your settings are migrated automatically on update. The old olic_* filter names are deprecated but still honored; rename them to oli_occ_* when convenient.

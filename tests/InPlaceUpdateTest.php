@@ -68,7 +68,7 @@ class InPlaceUpdateTest extends TestCase {
 
 		$this->assertTrue( defined( 'OLI_OCC_PLUGIN_LOADED' ) );
 		$this->assertTrue( defined( 'OLI_OCC_VERSION' ) );
-		$this->assertSame( '1.2.6', OLI_OCC_VERSION );
+		$this->assertSame( '1.2.7', OLI_OCC_VERSION );
 		$this->assertSame(
 			1,
 			substr_count(
@@ -162,13 +162,13 @@ class InPlaceUpdateTest extends TestCase {
 		$this->assertSame( 'legacy-site-key', $GLOBALS['oli_occ_test_options']['oli_occ_site_key'] );
 		$this->assertSame( 'legacy-secret-key', $GLOBALS['oli_occ_test_options']['oli_occ_secret_key'] );
 		$this->assertSame( 'dark', $GLOBALS['oli_occ_test_options']['oli_occ_theme'] );
-		$this->assertSame( '1.2.6', $GLOBALS['oli_occ_test_options']['oli_occ_db_version'] );
+		$this->assertSame( '1.2.7', $GLOBALS['oli_occ_test_options']['oli_occ_db_version'] );
 		$this->assertArrayNotHasKey( 'rbc_site_key', $GLOBALS['oli_occ_test_options'] );
 		$this->assertArrayNotHasKey( 'rbc_secret_key', $GLOBALS['oli_occ_test_options'] );
 		$this->assertArrayNotHasKey( 'rbc_theme', $GLOBALS['oli_occ_test_options'] );
 
 		do_action( 'plugins_loaded' );
-		$this->assertSame( '1.2.6', $GLOBALS['oli_occ_test_options']['oli_occ_db_version'] );
+		$this->assertSame( '1.2.7', $GLOBALS['oli_occ_test_options']['oli_occ_db_version'] );
 		$this->assertTrue( class_exists( 'Oli_OCC_Checkout_Captcha', false ) );
 	}
 

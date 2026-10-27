@@ -3,7 +3,7 @@
  * Plugin Name: Oli Checkout Captcha
  * Plugin URI: https://github.com/olivierbigras/Oli-Checkout-Captcha
  * Description: Blocks bots and card testing at WooCommerce checkout with Google reCAPTCHA v2/v3 or Cloudflare Turnstile. Works with classic and block checkout.
- * Version: 1.2.6
+ * Version: 1.2.7
  * Author: Olivier Bigras
  * Author URI: https://github.com/olivierbigras
  * License: GPL-2.0-or-later
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! defined( 'OLI_OCC_PLUGIN_LOADED' ) ) {
 	define( 'OLI_OCC_PLUGIN_LOADED', true );
-	define( 'OLI_OCC_VERSION', '1.2.6' );
+	define( 'OLI_OCC_VERSION', '1.2.7' );
 	define( 'OLI_OCC_PLUGIN_FILE', __FILE__ );
 	define( 'OLI_OCC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 	define( 'OLI_OCC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

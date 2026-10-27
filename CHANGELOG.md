@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file and in `readme.txt`.
 
+## 1.2.7 - 2026-10-27
+
+### Corrigé
+
+- Le filtre de capacité de la page de réglages est accroché à `option_page_capability_oli_occ_settings` (groupe `oli_occ_settings`). En 1.2.6, il restait sur `option_page_capability_olic_settings`, que WordPress ne déclenche plus depuis le renommage du groupe : le rappel de capacité du plugin ne s'appliquait plus à l'enregistrement (repli sur le contrôle par défaut d'`options.php`, `manage_options`). Aucun alias : c'est un filtre du cœur dont le nom suit le groupe de réglages, l'ancien nom ne se déclenche jamais.
+
+### Tests
+
+- `LegacyPrefixTest` : échoue si `olic` apparaît hors des exceptions documentées (alias dépréciés des deux filtres publics, migration, désinstallation, sel `'olic|'` du limiteur, historique du readme et du CHANGELOG) ; vérifie que le filtre de capacité suit le groupe de réglages.
+
 ## 1.2.6 - 2026-10-27
 
 ### Modifié
