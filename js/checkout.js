@@ -18,7 +18,7 @@
 	];
 
 	function getConfig() {
-		return typeof olicConfig !== 'undefined' ? olicConfig : null;
+		return typeof oliOccConfig !== 'undefined' ? oliOccConfig : null;
 	}
 
 	function getNamespace() {
@@ -34,7 +34,7 @@
 	function persistToken(token) {
 		latestToken = token || '';
 
-		var field = document.getElementById('olic-captcha-token');
+		var field = document.getElementById('oli-occ-captcha-token');
 		if (field) {
 			field.value = latestToken;
 		}
@@ -45,7 +45,7 @@
 			return latestToken;
 		}
 
-		var field = document.getElementById('olic-captcha-token');
+		var field = document.getElementById('oli-occ-captcha-token');
 		return field && field.value ? field.value : '';
 	}
 
@@ -172,21 +172,21 @@
 		bindBeforeProcessingFlush();
 	}
 
-	window.olicCaptchaCallback = function (token) {
+	window.oliOccCaptchaCallback = function (token) {
 		persistToken(token);
 	};
 
-	window.olicCaptchaExpired = function () {
+	window.oliOccCaptchaExpired = function () {
 		persistToken('');
 	};
 
-	window.olicCaptchaError = function () {
+	window.oliOccCaptchaError = function () {
 		persistToken('');
 	};
 
-	window.olicRecaptchaCallback = window.olicCaptchaCallback;
-	window.olicRecaptchaExpired = window.olicCaptchaExpired;
-	window.olicRecaptchaError = window.olicCaptchaError;
+	window.oliOccRecaptchaCallback = window.oliOccCaptchaCallback;
+	window.oliOccRecaptchaExpired = window.oliOccCaptchaExpired;
+	window.oliOccRecaptchaError = window.oliOccCaptchaError;
 
 	function isInsideExpress(node) {
 		if (!node || !node.closest) {
@@ -212,7 +212,7 @@
 	}
 
 	function getWidgetEl() {
-		return document.getElementById('olic-captcha-widget');
+		return document.getElementById('oli-occ-captcha-widget');
 	}
 
 	function isSameRenderedWidget() {
@@ -225,7 +225,7 @@
 		widgetId = id;
 		renderedWidgetEl = widget;
 		if (widget && widget.setAttribute) {
-			widget.setAttribute('data-olic-rendered', '1');
+			widget.setAttribute('data-oli-occ-rendered', '1');
 		}
 	}
 
@@ -238,7 +238,7 @@
 			return true;
 		}
 
-		if (widget.getAttribute && widget.getAttribute('data-olic-rendered') === '1') {
+		if (widget.getAttribute && widget.getAttribute('data-oli-occ-rendered') === '1') {
 			return true;
 		}
 
@@ -270,7 +270,7 @@
 	}
 
 	function ensureBlockContainer() {
-		var container = document.getElementById('olic-captcha-container');
+		var container = document.getElementById('oli-occ-captcha-container');
 		if (container) {
 			return container;
 		}
@@ -281,14 +281,14 @@
 		}
 
 		container = document.createElement('div');
-		container.id = 'olic-captcha-container';
-		container.className = 'olic-captcha-container';
+		container.id = 'oli-occ-captcha-container';
+		container.className = 'oli-occ-captcha-container';
 		if (getProvider() === 'recaptcha_v3') {
-			container.className += ' olic-captcha-container--v3';
+			container.className += ' oli-occ-captcha-container--v3';
 		}
 
 		var widget = document.createElement('div');
-		widget.id = 'olic-captcha-widget';
+		widget.id = 'oli-occ-captcha-widget';
 		container.appendChild(widget);
 
 		if (target.classList && target.classList.contains('wc-block-components-checkout-place-order-button')) {
@@ -362,9 +362,9 @@
 					turnstile.render(widget, {
 						sitekey: config.siteKey,
 						theme: config.theme || 'auto',
-						callback: window.olicCaptchaCallback,
-						'expired-callback': window.olicCaptchaExpired,
-						'error-callback': window.olicCaptchaError
+						callback: window.oliOccCaptchaCallback,
+						'expired-callback': window.oliOccCaptchaExpired,
+						'error-callback': window.oliOccCaptchaError
 					})
 				);
 				return;
@@ -379,9 +379,9 @@
 				grecaptcha.render(widget, {
 					sitekey: config.siteKey,
 					theme: config.theme === 'auto' ? 'light' : (config.theme || 'light'),
-					callback: 'olicCaptchaCallback',
-					'expired-callback': 'olicCaptchaExpired',
-					'error-callback': 'olicCaptchaError'
+					callback: 'oliOccCaptchaCallback',
+					'expired-callback': 'oliOccCaptchaExpired',
+					'error-callback': 'oliOccCaptchaError'
 				})
 			);
 		} catch (e) {
@@ -494,7 +494,7 @@
 		jQuery(document.body).on('checkout_error', resetAfterError);
 	}
 
-	window.olicCaptchaOnLoad = function () {
+	window.oliOccCaptchaOnLoad = function () {
 		window.setTimeout(function () {
 			if (getProvider() === 'recaptcha_v3') {
 				startV3();
@@ -508,15 +508,15 @@
 		}, 300);
 	};
 
-	window.olicRecaptchaOnLoad = window.olicCaptchaOnLoad;
+	window.oliOccRecaptchaOnLoad = window.oliOccCaptchaOnLoad;
 
 	function bindClassicSubmit() {
 		var form = document.querySelector('form.checkout');
-		if (!form || form.getAttribute('data-olic-bound') === '1') {
+		if (!form || form.getAttribute('data-oli-occ-bound') === '1') {
 			return;
 		}
 
-		form.setAttribute('data-olic-bound', '1');
+		form.setAttribute('data-oli-occ-bound', '1');
 		form.addEventListener('submit', function () {
 			if (getProvider() === 'recaptcha_v3') {
 				refreshV3Token();

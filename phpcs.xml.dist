@@ -26,7 +26,7 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="olic"/>
+				<element value="oli_occ"/><element value="Oli_OCC"/><element value="OLI_OCC"/><element value="oliOcc"/>
 			</property>
 		</properties>
 	</rule>

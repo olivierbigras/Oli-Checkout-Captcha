@@ -2,7 +2,7 @@
 /**
  * In-place update from recaptcha-block-checkout.php to oli-checkout-captcha.php.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 use PHPUnit\Framework\TestCase;
@@ -42,7 +42,7 @@ class InPlaceUpdateTest extends TestCase {
 
 		$this->assertNotFalse( $shim );
 		$this->assertDoesNotMatchRegularExpression( '/^\s*\*\s*Plugin Name\s*:/m', $shim );
-		$this->assertStringContainsString( 'OLIC_PLUGIN_LOADED', $shim );
+		$this->assertStringContainsString( 'OLI_OCC_PLUGIN_LOADED', $shim );
 		$this->assertStringContainsString( 'oli-checkout-captcha.php', $shim );
 	}
 
@@ -66,14 +66,14 @@ class InPlaceUpdateTest extends TestCase {
 		require $folder . '/recaptcha-block-checkout.php';
 		require $folder . '/oli-checkout-captcha.php';
 
-		$this->assertTrue( defined( 'OLIC_PLUGIN_LOADED' ) );
-		$this->assertTrue( defined( 'OLIC_VERSION' ) );
-		$this->assertSame( '1.2.5', OLIC_VERSION );
+		$this->assertTrue( defined( 'OLI_OCC_PLUGIN_LOADED' ) );
+		$this->assertTrue( defined( 'OLI_OCC_VERSION' ) );
+		$this->assertSame( '1.2.6', OLI_OCC_VERSION );
 		$this->assertSame(
 			1,
 			substr_count(
 				implode( "\n", get_included_files() ),
-				'includes/class-olic-checkout-captcha.php'
+				'includes/class-oli-occ-checkout-captcha.php'
 			)
 		);
 	}
@@ -96,7 +96,7 @@ class InPlaceUpdateTest extends TestCase {
 		$old = 'recaptcha-block-checkout/recaptcha-block-checkout.php';
 		$new = 'recaptcha-block-checkout/oli-checkout-captcha.php';
 
-		$GLOBALS['olic_test_options'] = array(
+		$GLOBALS['oli_occ_test_options'] = array(
 			'active_plugins' => array(
 				'woocommerce/woocommerce.php',
 				$old,
@@ -107,7 +107,7 @@ class InPlaceUpdateTest extends TestCase {
 			'rbc_theme'      => 'dark',
 		);
 
-		$GLOBALS['olic_test_site_options'] = array(
+		$GLOBALS['oli_occ_test_site_options'] = array(
 			'active_sitewide_plugins' => array(
 				'woocommerce/woocommerce.php' => 100,
 				$old                         => 200,
@@ -131,10 +131,10 @@ class InPlaceUpdateTest extends TestCase {
 
 		require $root . '/recaptcha-block-checkout/recaptcha-block-checkout.php';
 
-		$this->assertTrue( defined( 'OLIC_PLUGIN_LOADED' ) );
-		$this->assertSame( $root . '/recaptcha-block-checkout/oli-checkout-captcha.php', OLIC_PLUGIN_FILE );
+		$this->assertTrue( defined( 'OLI_OCC_PLUGIN_LOADED' ) );
+		$this->assertSame( $root . '/recaptcha-block-checkout/oli-checkout-captcha.php', OLI_OCC_PLUGIN_FILE );
 
-		$stored_active = $GLOBALS['olic_test_options']['active_plugins'];
+		$stored_active = $GLOBALS['oli_occ_test_options']['active_plugins'];
 		$this->assertSame(
 			array(
 				'woocommerce/woocommerce.php',
@@ -151,25 +151,25 @@ class InPlaceUpdateTest extends TestCase {
 				'woocommerce/woocommerce.php' => 100,
 				$new                         => 200,
 			),
-			$GLOBALS['olic_test_site_options']['active_sitewide_plugins']
+			$GLOBALS['oli_occ_test_site_options']['active_sitewide_plugins']
 		);
 
-		$this->assertArrayNotHasKey( 'olic_site_key', $GLOBALS['olic_test_options'] );
-		$this->assertArrayNotHasKey( 'olic_db_version', $GLOBALS['olic_test_options'] );
+		$this->assertArrayNotHasKey( 'oli_occ_site_key', $GLOBALS['oli_occ_test_options'] );
+		$this->assertArrayNotHasKey( 'oli_occ_db_version', $GLOBALS['oli_occ_test_options'] );
 
 		do_action( 'plugins_loaded' );
 
-		$this->assertSame( 'legacy-site-key', $GLOBALS['olic_test_options']['olic_site_key'] );
-		$this->assertSame( 'legacy-secret-key', $GLOBALS['olic_test_options']['olic_secret_key'] );
-		$this->assertSame( 'dark', $GLOBALS['olic_test_options']['olic_theme'] );
-		$this->assertSame( '1.2.5', $GLOBALS['olic_test_options']['olic_db_version'] );
-		$this->assertArrayNotHasKey( 'rbc_site_key', $GLOBALS['olic_test_options'] );
-		$this->assertArrayNotHasKey( 'rbc_secret_key', $GLOBALS['olic_test_options'] );
-		$this->assertArrayNotHasKey( 'rbc_theme', $GLOBALS['olic_test_options'] );
+		$this->assertSame( 'legacy-site-key', $GLOBALS['oli_occ_test_options']['oli_occ_site_key'] );
+		$this->assertSame( 'legacy-secret-key', $GLOBALS['oli_occ_test_options']['oli_occ_secret_key'] );
+		$this->assertSame( 'dark', $GLOBALS['oli_occ_test_options']['oli_occ_theme'] );
+		$this->assertSame( '1.2.6', $GLOBALS['oli_occ_test_options']['oli_occ_db_version'] );
+		$this->assertArrayNotHasKey( 'rbc_site_key', $GLOBALS['oli_occ_test_options'] );
+		$this->assertArrayNotHasKey( 'rbc_secret_key', $GLOBALS['oli_occ_test_options'] );
+		$this->assertArrayNotHasKey( 'rbc_theme', $GLOBALS['oli_occ_test_options'] );
 
 		do_action( 'plugins_loaded' );
-		$this->assertSame( '1.2.5', $GLOBALS['olic_test_options']['olic_db_version'] );
-		$this->assertTrue( class_exists( 'Olic_Checkout_Captcha', false ) );
+		$this->assertSame( '1.2.6', $GLOBALS['oli_occ_test_options']['oli_occ_db_version'] );
+		$this->assertTrue( class_exists( 'Oli_OCC_Checkout_Captcha', false ) );
 	}
 
 	/**
@@ -179,7 +179,7 @@ class InPlaceUpdateTest extends TestCase {
 	 */
 	private function copy_plugin_to_legacy_folder() {
 		$source = dirname( __DIR__ );
-		$root   = sys_get_temp_dir() . '/olic-inplace-' . str_replace( '.', '', uniqid( '', true ) );
+		$root   = sys_get_temp_dir() . '/oli-occ-inplace-' . str_replace( '.', '', uniqid( '', true ) );
 		$folder = $root . '/recaptcha-block-checkout';
 
 		if ( ! mkdir( $folder . '/includes', 0777, true ) && ! is_dir( $folder . '/includes' ) ) {
@@ -189,10 +189,10 @@ class InPlaceUpdateTest extends TestCase {
 		$files = array(
 			'recaptcha-block-checkout.php',
 			'oli-checkout-captcha.php',
-			'includes/olic-upgrade.php',
-			'includes/class-olic-verifier.php',
-			'includes/class-olic-rate-limiter.php',
-			'includes/class-olic-checkout-captcha.php',
+			'includes/oli-occ-upgrade.php',
+			'includes/class-oli-occ-verifier.php',
+			'includes/class-oli-occ-rate-limiter.php',
+			'includes/class-oli-occ-checkout-captcha.php',
 		);
 
 		foreach ( $files as $relative ) {

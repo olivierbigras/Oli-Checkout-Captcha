@@ -2,7 +2,7 @@
 /**
  * Store API checkout captcha refusal tests.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 use Automattic\WooCommerce\StoreApi\Exceptions\RouteException;
@@ -13,7 +13,7 @@ require_once __DIR__ . '/class-wc-store-api-route-exception-stub.php';
 /**
  * Minimal Store API request stand-in.
  */
-class Olic_Test_Store_Api_Request {
+class Oli_OCC_Test_Store_Api_Request {
 
 	/**
 	 * HTTP method.
@@ -53,7 +53,7 @@ class StoreApiCheckoutTest extends TestCase {
 	/**
 	 * Plugin instance.
 	 *
-	 * @var Olic_Checkout_Captcha
+	 * @var Oli_OCC_Checkout_Captcha
 	 */
 	private $plugin;
 
@@ -65,16 +65,16 @@ class StoreApiCheckoutTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$GLOBALS['olic_test_options']     = array();
-		$GLOBALS['olic_test_transients']  = array();
-		$GLOBALS['olic_test_http_requests'] = array();
-		$GLOBALS['olic_test_http_response'] = null;
+		$GLOBALS['oli_occ_test_options']     = array();
+		$GLOBALS['oli_occ_test_transients']  = array();
+		$GLOBALS['oli_occ_test_http_requests'] = array();
+		$GLOBALS['oli_occ_test_http_response'] = null;
 
-		if ( ! defined( 'OLIC_PLUGIN_LOADED' ) ) {
+		if ( ! defined( 'OLI_OCC_PLUGIN_LOADED' ) ) {
 			require dirname( __DIR__ ) . '/oli-checkout-captcha.php';
 		}
 
-		$this->plugin = Olic_Checkout_Captcha::get_instance();
+		$this->plugin = Oli_OCC_Checkout_Captcha::get_instance();
 	}
 
 	/**
@@ -83,7 +83,7 @@ class StoreApiCheckoutTest extends TestCase {
 	 * @return void
 	 */
 	public function test_store_api_refusal_throws_route_exception_400() {
-		$request          = new Olic_Test_Store_Api_Request();
+		$request          = new Oli_OCC_Test_Store_Api_Request();
 		$request->method  = 'POST';
 		$request->params  = array();
 
@@ -92,7 +92,7 @@ class StoreApiCheckoutTest extends TestCase {
 			$this->fail( 'Expected a Store API RouteException.' );
 		} catch ( RouteException $exception ) {
 			$this->assertSame( 400, $exception->getCode() );
-			$this->assertSame( 'olic_captcha_failed', $exception->getErrorCode() );
+			$this->assertSame( 'oli_occ_captcha_failed', $exception->getErrorCode() );
 			$this->assertSame( 'Please complete the captcha verification.', $exception->getMessage() );
 		}
 	}

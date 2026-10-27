@@ -2,7 +2,7 @@
 /**
  * Checkout script enqueue tests (B2, B3).
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 namespace Automattic\WooCommerce\Blocks\Utils {
@@ -40,7 +40,7 @@ namespace {
 		/**
 		 * Plugin instance.
 		 *
-		 * @var \Olic_Checkout_Captcha
+		 * @var \Oli_OCC_Checkout_Captcha
 		 */
 		private $plugin;
 
@@ -52,29 +52,29 @@ namespace {
 		protected function setUp(): void {
 			parent::setUp();
 
-			$GLOBALS['olic_test_registered_scripts'] = array();
-			$GLOBALS['olic_test_enqueued_scripts']   = array();
-			$GLOBALS['olic_test_enqueued_styles']    = array();
-			$GLOBALS['olic_test_localized_scripts']  = array();
-			$GLOBALS['olic_test_is_checkout']        = true;
-			$GLOBALS['olic_test_is_order_received']  = false;
-			$GLOBALS['olic_test_is_checkout_pay']    = false;
-			$GLOBALS['olic_test_has_blocks']         = array();
-			$GLOBALS['olic_test_has_blocks_by_page'] = array();
-			$GLOBALS['olic_test_checkout_page_id']   = 0;
-			$GLOBALS['olic_test_options']            = array(
-				'olic_site_key'   => 'test-site-key',
-				'olic_secret_key' => 'test-secret-key',
-				'olic_provider'   => 'recaptcha_v2',
+			$GLOBALS['oli_occ_test_registered_scripts'] = array();
+			$GLOBALS['oli_occ_test_enqueued_scripts']   = array();
+			$GLOBALS['oli_occ_test_enqueued_styles']    = array();
+			$GLOBALS['oli_occ_test_localized_scripts']  = array();
+			$GLOBALS['oli_occ_test_is_checkout']        = true;
+			$GLOBALS['oli_occ_test_is_order_received']  = false;
+			$GLOBALS['oli_occ_test_is_checkout_pay']    = false;
+			$GLOBALS['oli_occ_test_has_blocks']         = array();
+			$GLOBALS['oli_occ_test_has_blocks_by_page'] = array();
+			$GLOBALS['oli_occ_test_checkout_page_id']   = 0;
+			$GLOBALS['oli_occ_test_options']            = array(
+				'oli_occ_site_key'   => 'test-site-key',
+				'oli_occ_secret_key' => 'test-secret-key',
+				'oli_occ_provider'   => 'recaptcha_v2',
 			);
 
 			\Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::$is_checkout_block_default = false;
 
-			if ( ! defined( 'OLIC_PLUGIN_LOADED' ) ) {
+			if ( ! defined( 'OLI_OCC_PLUGIN_LOADED' ) ) {
 				require dirname( __DIR__ ) . '/oli-checkout-captcha.php';
 			}
 
-			$this->plugin = \Olic_Checkout_Captcha::get_instance();
+			$this->plugin = \Oli_OCC_Checkout_Captcha::get_instance();
 		}
 
 		/**
@@ -85,8 +85,8 @@ namespace {
 		public function test_classic_checkout_script_depends_on_jquery_only_when_blocks_store_missing() {
 			$this->plugin->enqueue_scripts();
 
-			$this->assertSame( array( 'jquery' ), $this->registered_deps( 'olic-checkout' ) );
-			$this->assertContains( 'olic-checkout', $GLOBALS['olic_test_enqueued_scripts'] );
+			$this->assertSame( array( 'jquery' ), $this->registered_deps( 'oli-occ-checkout' ) );
+			$this->assertContains( 'oli-occ-checkout', $GLOBALS['oli_occ_test_enqueued_scripts'] );
 		}
 
 		/**
@@ -100,9 +100,9 @@ namespace {
 
 			$this->plugin->enqueue_scripts();
 
-			$this->assertSame( array( 'jquery' ), $this->registered_deps( 'olic-checkout' ) );
-			$this->assertNotContains( 'wc-blocks-data-store', $this->registered_deps( 'olic-checkout' ) );
-			$this->assertNotContains( 'wp-data', $this->registered_deps( 'olic-checkout' ) );
+			$this->assertSame( array( 'jquery' ), $this->registered_deps( 'oli-occ-checkout' ) );
+			$this->assertNotContains( 'wc-blocks-data-store', $this->registered_deps( 'oli-occ-checkout' ) );
+			$this->assertNotContains( 'wp-data', $this->registered_deps( 'oli-occ-checkout' ) );
 		}
 
 		/**
@@ -111,7 +111,7 @@ namespace {
 		 * @return void
 		 */
 		public function test_block_checkout_declares_registered_blocks_store_deps() {
-			$GLOBALS['olic_test_has_blocks'] = array( 'woocommerce/checkout' );
+			$GLOBALS['oli_occ_test_has_blocks'] = array( 'woocommerce/checkout' );
 			$this->register_script( 'wp-data' );
 			$this->register_script( 'wc-blocks-data-store' );
 
@@ -119,7 +119,7 @@ namespace {
 
 			$this->assertSame(
 				array( 'jquery', 'wp-data', 'wc-blocks-data-store' ),
-				$this->registered_deps( 'olic-checkout' )
+				$this->registered_deps( 'oli-occ-checkout' )
 			);
 		}
 
@@ -129,15 +129,15 @@ namespace {
 		 * @return void
 		 */
 		public function test_block_checkout_omits_unregistered_blocks_store() {
-			$GLOBALS['olic_test_has_blocks'] = array( 'woocommerce/checkout' );
+			$GLOBALS['oli_occ_test_has_blocks'] = array( 'woocommerce/checkout' );
 			$this->register_script( 'wp-data' );
 
 			$this->plugin->enqueue_scripts();
 
-			$deps = $this->registered_deps( 'olic-checkout' );
+			$deps = $this->registered_deps( 'oli-occ-checkout' );
 			$this->assertSame( array( 'jquery', 'wp-data' ), $deps );
 			$this->assertNotContains( 'wc-blocks-data-store', $deps );
-			$this->assertContains( 'olic-checkout', $GLOBALS['olic_test_enqueued_scripts'] );
+			$this->assertContains( 'oli-occ-checkout', $GLOBALS['oli_occ_test_enqueued_scripts'] );
 		}
 
 		/**
@@ -146,8 +146,8 @@ namespace {
 		 * @return void
 		 */
 		public function test_block_checkout_detected_from_checkout_page_id() {
-			$GLOBALS['olic_test_checkout_page_id']   = 37;
-			$GLOBALS['olic_test_has_blocks_by_page'] = array(
+			$GLOBALS['oli_occ_test_checkout_page_id']   = 37;
+			$GLOBALS['oli_occ_test_has_blocks_by_page'] = array(
 				37 => array( 'woocommerce/checkout' ),
 			);
 			$this->register_script( 'wp-data' );
@@ -157,7 +157,7 @@ namespace {
 
 			$this->assertSame(
 				array( 'jquery', 'wp-data', 'wc-blocks-data-store' ),
-				$this->registered_deps( 'olic-checkout' )
+				$this->registered_deps( 'oli-occ-checkout' )
 			);
 		}
 
@@ -175,7 +175,7 @@ namespace {
 
 			$this->assertSame(
 				array( 'jquery', 'wp-data', 'wc-blocks-data-store' ),
-				$this->registered_deps( 'olic-checkout' )
+				$this->registered_deps( 'oli-occ-checkout' )
 			);
 		}
 
@@ -185,17 +185,17 @@ namespace {
 		 * @return void
 		 */
 		public function test_turnstile_api_js_has_null_version() {
-			$GLOBALS['olic_test_options']['olic_provider'] = 'turnstile';
+			$GLOBALS['oli_occ_test_options']['oli_occ_provider'] = 'turnstile';
 
 			$this->plugin->enqueue_scripts();
 
-			$this->assertArrayHasKey( 'olic-turnstile', $GLOBALS['olic_test_registered_scripts'] );
-			$this->assertNull( $GLOBALS['olic_test_registered_scripts']['olic-turnstile']['ver'] );
+			$this->assertArrayHasKey( 'oli-occ-turnstile', $GLOBALS['oli_occ_test_registered_scripts'] );
+			$this->assertNull( $GLOBALS['oli_occ_test_registered_scripts']['oli-occ-turnstile']['ver'] );
 			$this->assertStringContainsString(
 				'challenges.cloudflare.com/turnstile/v0/api.js',
-				$GLOBALS['olic_test_registered_scripts']['olic-turnstile']['src']
+				$GLOBALS['oli_occ_test_registered_scripts']['oli-occ-turnstile']['src']
 			);
-			$this->assertContains( 'olic-turnstile', $GLOBALS['olic_test_enqueued_scripts'] );
+			$this->assertContains( 'oli-occ-turnstile', $GLOBALS['oli_occ_test_enqueued_scripts'] );
 		}
 
 		/**
@@ -206,8 +206,8 @@ namespace {
 		public function test_recaptcha_api_js_has_null_version() {
 			$this->plugin->enqueue_scripts();
 
-			$this->assertArrayHasKey( 'olic-recaptcha', $GLOBALS['olic_test_registered_scripts'] );
-			$this->assertNull( $GLOBALS['olic_test_registered_scripts']['olic-recaptcha']['ver'] );
+			$this->assertArrayHasKey( 'oli-occ-recaptcha', $GLOBALS['oli_occ_test_registered_scripts'] );
+			$this->assertNull( $GLOBALS['oli_occ_test_registered_scripts']['oli-occ-recaptcha']['ver'] );
 		}
 
 		/**
@@ -215,8 +215,8 @@ namespace {
 		 * @return array<int, string>
 		 */
 		private function registered_deps( $handle ) {
-			$this->assertArrayHasKey( $handle, $GLOBALS['olic_test_registered_scripts'] );
-			return $GLOBALS['olic_test_registered_scripts'][ $handle ]['deps'];
+			$this->assertArrayHasKey( $handle, $GLOBALS['oli_occ_test_registered_scripts'] );
+			return $GLOBALS['oli_occ_test_registered_scripts'][ $handle ]['deps'];
 		}
 
 		/**
@@ -224,7 +224,7 @@ namespace {
 		 * @return void
 		 */
 		private function register_script( $handle ) {
-			$GLOBALS['olic_test_registered_scripts'][ $handle ] = array(
+			$GLOBALS['oli_occ_test_registered_scripts'][ $handle ] = array(
 				'src'  => 'https://example.test/' . $handle . '.js',
 				'deps' => array(),
 				'ver'  => '1.0.0',

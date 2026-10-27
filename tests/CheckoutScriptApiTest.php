@@ -2,7 +2,7 @@
 /**
  * Checkout.js Store API helper tests (B1 / token transport).
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 use PHPUnit\Framework\TestCase;

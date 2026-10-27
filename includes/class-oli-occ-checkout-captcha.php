@@ -2,7 +2,7 @@
 /**
  * Main plugin class.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class Olic_Checkout_Captcha {
+class Oli_OCC_Checkout_Captcha {
 
 	/**
 	 * Store API / script namespace.
@@ -43,7 +43,7 @@ class Olic_Checkout_Captcha {
 	/**
 	 * Singleton instance.
 	 *
-	 * @var Olic_Checkout_Captcha|null
+	 * @var Oli_OCC_Checkout_Captcha|null
 	 */
 	private static $instance = null;
 
@@ -51,7 +51,7 @@ class Olic_Checkout_Captcha {
 	 * Token verifier.
 	 *
 	 * @since 1.2.0
-	 * @var Olic_Verifier
+	 * @var Oli_OCC_Verifier
 	 */
 	private $verifier;
 
@@ -59,7 +59,7 @@ class Olic_Checkout_Captcha {
 	 * Failed-attempt limiter.
 	 *
 	 * @since 1.2.0
-	 * @var Olic_Rate_Limiter
+	 * @var Oli_OCC_Rate_Limiter
 	 */
 	private $rate_limiter;
 
@@ -68,7 +68,7 @@ class Olic_Checkout_Captcha {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return Olic_Checkout_Captcha
+	 * @return Oli_OCC_Checkout_Captcha
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -84,13 +84,13 @@ class Olic_Checkout_Captcha {
 	 * @since 1.0.0
 	 */
 	private function __construct() {
-		$this->verifier     = new Olic_Verifier();
-		$this->rate_limiter = new Olic_Rate_Limiter();
+		$this->verifier     = new Oli_OCC_Verifier();
+		$this->rate_limiter = new Oli_OCC_Rate_Limiter();
 
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'option_page_capability_olic_settings', array( $this, 'get_settings_capability' ) );
-		add_filter( 'plugin_action_links_' . plugin_basename( OLIC_PLUGIN_FILE ), array( $this, 'add_settings_link' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( OLI_OCC_PLUGIN_FILE ), array( $this, 'add_settings_link' ) );
 
 		if ( ! class_exists( 'WooCommerce' ) ) {
 			add_action( 'admin_notices', array( $this, 'render_missing_woocommerce_notice' ) );
@@ -176,121 +176,121 @@ class Olic_Checkout_Captcha {
 			return;
 		}
 
-		$this->register_string_setting( 'olic_provider', array( $this, 'sanitize_provider' ), 'recaptcha_v2' );
-		$this->register_string_setting( 'olic_site_key', array( $this, 'sanitize_api_key' ), '' );
-		$this->register_string_setting( 'olic_secret_key', array( $this, 'sanitize_api_key' ), '' );
-		$this->register_string_setting( 'olic_theme', array( $this, 'sanitize_theme' ), 'light' );
-		$this->register_string_setting( 'olic_score_threshold', array( $this, 'sanitize_score_threshold' ), '0.5' );
-		$this->register_string_setting( 'olic_fail_closed', array( $this, 'sanitize_checkbox' ), '1' );
-		$this->register_string_setting( 'olic_rate_limit_enabled', array( $this, 'sanitize_checkbox' ), '0' );
-		$this->register_string_setting( 'olic_rate_limit_max', array( $this, 'sanitize_rate_limit_max' ), '10' );
-		$this->register_string_setting( 'olic_rate_limit_window', array( $this, 'sanitize_rate_limit_window' ), '900' );
+		$this->register_string_setting( 'oli_occ_provider', array( $this, 'sanitize_provider' ), 'recaptcha_v2' );
+		$this->register_string_setting( 'oli_occ_site_key', array( $this, 'sanitize_api_key' ), '' );
+		$this->register_string_setting( 'oli_occ_secret_key', array( $this, 'sanitize_api_key' ), '' );
+		$this->register_string_setting( 'oli_occ_theme', array( $this, 'sanitize_theme' ), 'light' );
+		$this->register_string_setting( 'oli_occ_score_threshold', array( $this, 'sanitize_score_threshold' ), '0.5' );
+		$this->register_string_setting( 'oli_occ_fail_closed', array( $this, 'sanitize_checkbox' ), '1' );
+		$this->register_string_setting( 'oli_occ_rate_limit_enabled', array( $this, 'sanitize_checkbox' ), '0' );
+		$this->register_string_setting( 'oli_occ_rate_limit_max', array( $this, 'sanitize_rate_limit_max' ), '10' );
+		$this->register_string_setting( 'oli_occ_rate_limit_window', array( $this, 'sanitize_rate_limit_window' ), '900' );
 
 		add_settings_section(
-			'olic_provider_section',
+			'oli_occ_provider_section',
 			__( 'Provider', 'oli-checkout-captcha' ),
 			array( $this, 'render_provider_section' ),
 			'oli-checkout-captcha'
 		);
 
 		add_settings_field(
-			'olic_provider',
+			'oli_occ_provider',
 			__( 'Captcha provider', 'oli-checkout-captcha' ),
 			array( $this, 'render_provider_field' ),
 			'oli-checkout-captcha',
-			'olic_provider_section'
+			'oli_occ_provider_section'
 		);
 
 		add_settings_section(
-			'olic_settings_section',
+			'oli_occ_settings_section',
 			__( 'API keys', 'oli-checkout-captcha' ),
 			array( $this, 'render_settings_section' ),
 			'oli-checkout-captcha'
 		);
 
 		add_settings_field(
-			'olic_site_key',
+			'oli_occ_site_key',
 			__( 'Site Key', 'oli-checkout-captcha' ),
 			array( $this, 'render_site_key_field' ),
 			'oli-checkout-captcha',
-			'olic_settings_section'
+			'oli_occ_settings_section'
 		);
 
 		add_settings_field(
-			'olic_secret_key',
+			'oli_occ_secret_key',
 			__( 'Secret Key', 'oli-checkout-captcha' ),
 			array( $this, 'render_secret_key_field' ),
 			'oli-checkout-captcha',
-			'olic_settings_section'
+			'oli_occ_settings_section'
 		);
 
 		add_settings_section(
-			'olic_verification_section',
+			'oli_occ_verification_section',
 			__( 'Verification', 'oli-checkout-captcha' ),
 			array( $this, 'render_verification_section' ),
 			'oli-checkout-captcha'
 		);
 
 		add_settings_field(
-			'olic_score_threshold',
+			'oli_occ_score_threshold',
 			__( 'reCAPTCHA v3 score threshold', 'oli-checkout-captcha' ),
 			array( $this, 'render_score_threshold_field' ),
 			'oli-checkout-captcha',
-			'olic_verification_section'
+			'oli_occ_verification_section'
 		);
 
 		add_settings_field(
-			'olic_fail_closed',
+			'oli_occ_fail_closed',
 			__( 'Fail closed', 'oli-checkout-captcha' ),
 			array( $this, 'render_fail_closed_field' ),
 			'oli-checkout-captcha',
-			'olic_verification_section'
+			'oli_occ_verification_section'
 		);
 
 		add_settings_section(
-			'olic_rate_limit_section',
+			'oli_occ_rate_limit_section',
 			__( 'Rate limiting', 'oli-checkout-captcha' ),
 			array( $this, 'render_rate_limit_section' ),
 			'oli-checkout-captcha'
 		);
 
 		add_settings_field(
-			'olic_rate_limit_enabled',
+			'oli_occ_rate_limit_enabled',
 			__( 'Limit failed attempts', 'oli-checkout-captcha' ),
 			array( $this, 'render_rate_limit_enabled_field' ),
 			'oli-checkout-captcha',
-			'olic_rate_limit_section'
+			'oli_occ_rate_limit_section'
 		);
 
 		add_settings_field(
-			'olic_rate_limit_max',
+			'oli_occ_rate_limit_max',
 			__( 'Maximum failures', 'oli-checkout-captcha' ),
 			array( $this, 'render_rate_limit_max_field' ),
 			'oli-checkout-captcha',
-			'olic_rate_limit_section'
+			'oli_occ_rate_limit_section'
 		);
 
 		add_settings_field(
-			'olic_rate_limit_window',
+			'oli_occ_rate_limit_window',
 			__( 'Window (seconds)', 'oli-checkout-captcha' ),
 			array( $this, 'render_rate_limit_window_field' ),
 			'oli-checkout-captcha',
-			'olic_rate_limit_section'
+			'oli_occ_rate_limit_section'
 		);
 
 		add_settings_section(
-			'olic_appearance_section',
+			'oli_occ_appearance_section',
 			__( 'Appearance', 'oli-checkout-captcha' ),
 			'__return_false',
 			'oli-checkout-captcha'
 		);
 
 		add_settings_field(
-			'olic_theme',
+			'oli_occ_theme',
 			__( 'Theme', 'oli-checkout-captcha' ),
 			array( $this, 'render_theme_field' ),
 			'oli-checkout-captcha',
-			'olic_appearance_section'
+			'oli_occ_appearance_section'
 		);
 	}
 
@@ -306,7 +306,7 @@ class Olic_Checkout_Captcha {
 	 */
 	private function register_string_setting( $option_name, $sanitize, $default_value ) {
 		register_setting(
-			'olic_settings',
+			'oli_occ_settings',
 			$option_name,
 			array(
 				'type'              => 'string',
@@ -342,7 +342,7 @@ class Olic_Checkout_Captcha {
 		}
 
 		echo '<form method="post" action="options.php">';
-		settings_fields( 'olic_settings' );
+		settings_fields( 'oli_occ_settings' );
 		do_settings_sections( 'oli-checkout-captcha' );
 		submit_button();
 		echo '</form>';
@@ -370,12 +370,12 @@ class Olic_Checkout_Captcha {
 	public function render_provider_field() {
 		$provider = $this->get_provider();
 		$choices  = array(
-			Olic_Verifier::PROVIDER_RECAPTCHA_V2 => __( 'Google reCAPTCHA v2 (checkbox)', 'oli-checkout-captcha' ),
-			Olic_Verifier::PROVIDER_RECAPTCHA_V3 => __( 'Google reCAPTCHA v3 (score)', 'oli-checkout-captcha' ),
-			Olic_Verifier::PROVIDER_TURNSTILE    => __( 'Cloudflare Turnstile', 'oli-checkout-captcha' ),
+			Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2 => __( 'Google reCAPTCHA v2 (checkbox)', 'oli-checkout-captcha' ),
+			Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3 => __( 'Google reCAPTCHA v3 (score)', 'oli-checkout-captcha' ),
+			Oli_OCC_Verifier::PROVIDER_TURNSTILE    => __( 'Cloudflare Turnstile', 'oli-checkout-captcha' ),
 		);
 
-		echo '<select id="olic_provider" name="olic_provider">';
+		echo '<select id="oli_occ_provider" name="oli_occ_provider">';
 		foreach ( $choices as $value => $label ) {
 			printf(
 				'<option value="%1$s"%2$s>%3$s</option>',
@@ -407,8 +407,8 @@ class Olic_Checkout_Captcha {
 	 */
 	public function render_site_key_field() {
 		printf(
-			'<input type="text" id="olic_site_key" name="olic_site_key" value="%s" class="regular-text" autocomplete="off" />',
-			esc_attr( $this->get_stored_option( 'olic_site_key' ) )
+			'<input type="text" id="oli_occ_site_key" name="oli_occ_site_key" value="%s" class="regular-text" autocomplete="off" />',
+			esc_attr( $this->get_stored_option( 'oli_occ_site_key' ) )
 		);
 
 		$recaptcha_link = sprintf(
@@ -450,8 +450,8 @@ class Olic_Checkout_Captcha {
 	 */
 	public function render_secret_key_field() {
 		printf(
-			'<input type="text" id="olic_secret_key" name="olic_secret_key" value="%s" class="regular-text" autocomplete="off" />',
-			esc_attr( $this->get_stored_option( 'olic_secret_key' ) )
+			'<input type="text" id="oli_occ_secret_key" name="oli_occ_secret_key" value="%s" class="regular-text" autocomplete="off" />',
+			esc_attr( $this->get_stored_option( 'oli_occ_secret_key' ) )
 		);
 	}
 
@@ -475,7 +475,7 @@ class Olic_Checkout_Captcha {
 	 */
 	public function render_score_threshold_field() {
 		printf(
-			'<input type="number" id="olic_score_threshold" name="olic_score_threshold" value="%s" min="0" max="1" step="0.05" class="small-text" />',
+			'<input type="number" id="oli_occ_score_threshold" name="oli_occ_score_threshold" value="%s" min="0" max="1" step="0.05" class="small-text" />',
 			esc_attr( (string) $this->get_score_threshold() )
 		);
 		echo '<p class="description">' . esc_html__( 'Used only for reCAPTCHA v3. Requests scoring below this value (0.0–1.0) are rejected. Default is 0.5.', 'oli-checkout-captcha' ) . '</p>';
@@ -489,9 +489,9 @@ class Olic_Checkout_Captcha {
 	 * @return void
 	 */
 	public function render_fail_closed_field() {
-		echo '<input type="hidden" name="olic_fail_closed" value="0" />';
+		echo '<input type="hidden" name="oli_occ_fail_closed" value="0" />';
 		printf(
-			'<label><input type="checkbox" id="olic_fail_closed" name="olic_fail_closed" value="1"%s /> %s</label>',
+			'<label><input type="checkbox" id="oli_occ_fail_closed" name="oli_occ_fail_closed" value="1"%s /> %s</label>',
 			checked( $this->is_fail_closed(), true, false ),
 			esc_html__( 'Block checkout when the captcha provider cannot be reached.', 'oli-checkout-captcha' )
 		);
@@ -517,9 +517,9 @@ class Olic_Checkout_Captcha {
 	 * @return void
 	 */
 	public function render_rate_limit_enabled_field() {
-		echo '<input type="hidden" name="olic_rate_limit_enabled" value="0" />';
+		echo '<input type="hidden" name="oli_occ_rate_limit_enabled" value="0" />';
 		printf(
-			'<label><input type="checkbox" id="olic_rate_limit_enabled" name="olic_rate_limit_enabled" value="1"%s /> %s</label>',
+			'<label><input type="checkbox" id="oli_occ_rate_limit_enabled" name="oli_occ_rate_limit_enabled" value="1"%s /> %s</label>',
 			checked( $this->is_rate_limit_enabled(), true, false ),
 			esc_html__( 'Enable rate limiting of failed captcha attempts.', 'oli-checkout-captcha' )
 		);
@@ -534,7 +534,7 @@ class Olic_Checkout_Captcha {
 	 */
 	public function render_rate_limit_max_field() {
 		printf(
-			'<input type="number" id="olic_rate_limit_max" name="olic_rate_limit_max" value="%s" min="1" step="1" class="small-text" />',
+			'<input type="number" id="oli_occ_rate_limit_max" name="oli_occ_rate_limit_max" value="%s" min="1" step="1" class="small-text" />',
 			esc_attr( (string) $this->get_rate_limit_max() )
 		);
 	}
@@ -548,7 +548,7 @@ class Olic_Checkout_Captcha {
 	 */
 	public function render_rate_limit_window_field() {
 		printf(
-			'<input type="number" id="olic_rate_limit_window" name="olic_rate_limit_window" value="%s" min="60" step="1" class="small-text" />',
+			'<input type="number" id="oli_occ_rate_limit_window" name="oli_occ_rate_limit_window" value="%s" min="60" step="1" class="small-text" />',
 			esc_attr( (string) $this->get_rate_limit_window() )
 		);
 		echo '<p class="description">' . esc_html__( 'Number of seconds the failure counter is kept. Minimum 60.', 'oli-checkout-captcha' ) . '</p>';
@@ -569,7 +569,7 @@ class Olic_Checkout_Captcha {
 			'auto'  => __( 'Auto (Turnstile only)', 'oli-checkout-captcha' ),
 		);
 
-		echo '<select id="olic_theme" name="olic_theme">';
+		echo '<select id="oli_occ_theme" name="oli_occ_theme">';
 		foreach ( $choices as $value => $label ) {
 			printf(
 				'<option value="%1$s"%2$s>%3$s</option>',
@@ -592,17 +592,17 @@ class Olic_Checkout_Captcha {
 	 */
 	public function sanitize_provider( $value ) {
 		if ( ! current_user_can( $this->get_settings_capability() ) ) {
-			return Olic_Verifier::PROVIDER_RECAPTCHA_V2;
+			return Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2;
 		}
 
 		$value   = sanitize_key( wp_unslash( (string) $value ) );
 		$allowed = array(
-			Olic_Verifier::PROVIDER_RECAPTCHA_V2,
-			Olic_Verifier::PROVIDER_RECAPTCHA_V3,
-			Olic_Verifier::PROVIDER_TURNSTILE,
+			Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2,
+			Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3,
+			Oli_OCC_Verifier::PROVIDER_TURNSTILE,
 		);
 
-		return in_array( $value, $allowed, true ) ? $value : Olic_Verifier::PROVIDER_RECAPTCHA_V2;
+		return in_array( $value, $allowed, true ) ? $value : Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2;
 	}
 
 	/**
@@ -751,25 +751,25 @@ class Olic_Checkout_Captcha {
 		}
 
 		wp_enqueue_style(
-			'olic-checkout',
-			plugins_url( 'css/checkout.css', OLIC_PLUGIN_FILE ),
+			'oli-occ-checkout',
+			plugins_url( 'css/checkout.css', OLI_OCC_PLUGIN_FILE ),
 			array(),
-			OLIC_VERSION
+			OLI_OCC_VERSION
 		);
 
 		wp_register_script(
-			'olic-checkout',
-			plugins_url( 'js/checkout.js', OLIC_PLUGIN_FILE ),
+			'oli-occ-checkout',
+			plugins_url( 'js/checkout.js', OLI_OCC_PLUGIN_FILE ),
 			$this->get_checkout_script_dependencies(),
-			OLIC_VERSION,
+			OLI_OCC_VERSION,
 			true
 		);
 
 		wp_localize_script(
-			'olic-checkout',
-			'olicConfig',
+			'oli-occ-checkout',
+			'oliOccConfig',
 			array(
-				'siteKey'   => $this->get_stored_option( 'olic_site_key' ),
+				'siteKey'   => $this->get_stored_option( 'oli_occ_site_key' ),
 				'theme'     => $this->get_theme(),
 				'namespace' => self::EXTENSION_NAMESPACE,
 				'provider'  => $this->get_provider(),
@@ -777,14 +777,14 @@ class Olic_Checkout_Captcha {
 			)
 		);
 
-		wp_enqueue_script( 'olic-checkout' );
+		wp_enqueue_script( 'oli-occ-checkout' );
 
 		$provider = $this->get_provider();
-		if ( Olic_Verifier::PROVIDER_TURNSTILE === $provider ) {
+		if ( Oli_OCC_Verifier::PROVIDER_TURNSTILE === $provider ) {
 			wp_enqueue_script(
-				'olic-turnstile',
-				'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=olicCaptchaOnLoad&render=explicit', // phpcs:ignore PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- Documented Turnstile widget script, loaded only on checkout.
-				array( 'olic-checkout' ),
+				'oli-occ-turnstile',
+				'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=oliOccCaptchaOnLoad&render=explicit', // phpcs:ignore PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- Documented Turnstile widget script, loaded only on checkout.
+				array( 'oli-occ-checkout' ),
 				null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Cloudflare Turnstile api.js rejects the WordPress ?ver= query argument.
 				array(
 					'in_footer' => true,
@@ -794,11 +794,11 @@ class Olic_Checkout_Captcha {
 			return;
 		}
 
-		if ( Olic_Verifier::PROVIDER_RECAPTCHA_V3 === $provider ) {
+		if ( Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3 === $provider ) {
 			wp_enqueue_script(
-				'olic-recaptcha',
-				'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( $this->get_stored_option( 'olic_site_key' ) ),
-				array( 'olic-checkout' ),
+				'oli-occ-recaptcha',
+				'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( $this->get_stored_option( 'oli_occ_site_key' ) ),
+				array( 'oli-occ-checkout' ),
 				null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Google reCAPTCHA api.js also rejects unknown query arguments such as ?ver=.
 				array(
 					'in_footer' => true,
@@ -809,9 +809,9 @@ class Olic_Checkout_Captcha {
 		}
 
 		wp_enqueue_script(
-			'olic-recaptcha',
-			'https://www.google.com/recaptcha/api.js?onload=olicCaptchaOnLoad&render=explicit',
-			array( 'olic-checkout' ),
+			'oli-occ-recaptcha',
+			'https://www.google.com/recaptcha/api.js?onload=oliOccCaptchaOnLoad&render=explicit',
+			array( 'oli-occ-checkout' ),
 			null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Google reCAPTCHA api.js also rejects unknown query arguments such as ?ver=.
 			array(
 				'in_footer' => true,
@@ -833,14 +833,14 @@ class Olic_Checkout_Captcha {
 		}
 
 		$provider = $this->get_provider();
-		$classes  = 'olic-captcha-container';
-		if ( Olic_Verifier::PROVIDER_RECAPTCHA_V3 === $provider ) {
-			$classes .= ' olic-captcha-container--v3';
+		$classes  = 'oli-occ-captcha-container';
+		if ( Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3 === $provider ) {
+			$classes .= ' oli-occ-captcha-container--v3';
 		}
 
-		echo '<div id="olic-captcha-container" class="' . esc_attr( $classes ) . '">';
-		echo '<div id="olic-captcha-widget"></div>';
-		echo '<input type="hidden" name="olic_captcha_token" id="olic-captcha-token" value="" />';
+		echo '<div id="oli-occ-captcha-container" class="' . esc_attr( $classes ) . '">';
+		echo '<div id="oli-occ-captcha-widget"></div>';
+		echo '<input type="hidden" name="oli_occ_captcha_token" id="oli-occ-captcha-token" value="" />';
 		echo '</div>';
 	}
 
@@ -952,7 +952,7 @@ class Olic_Checkout_Captcha {
 	 */
 	private function throw_store_api_failure( $message ) {
 		if ( class_exists( \Automattic\WooCommerce\StoreApi\Exceptions\RouteException::class ) ) {
-			throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException( 'olic_captcha_failed', esc_html( $message ), 400 );
+			throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException( 'oli_occ_captcha_failed', esc_html( $message ), 400 );
 		}
 
 		throw new \Exception( esc_html( $message ), 400 );
@@ -970,8 +970,8 @@ class Olic_Checkout_Captcha {
 			return;
 		}
 
-		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', OLIC_PLUGIN_FILE, true );
-		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', OLIC_PLUGIN_FILE, true );
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', OLI_OCC_PLUGIN_FILE, true );
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', OLI_OCC_PLUGIN_FILE, true );
 	}
 
 	/**
@@ -1016,7 +1016,7 @@ class Olic_Checkout_Captcha {
 	private function get_verify_settings() {
 		return array(
 			'provider'        => $this->get_provider(),
-			'secret'          => $this->get_stored_option( 'olic_secret_key' ),
+			'secret'          => $this->get_stored_option( 'oli_occ_secret_key' ),
 			'remote_ip'       => $this->get_remote_ip(),
 			'score_threshold' => $this->get_score_threshold(),
 			'expected_action' => self::CAPTCHA_ACTION,
@@ -1032,7 +1032,7 @@ class Olic_Checkout_Captcha {
 	 * @return bool
 	 */
 	private function has_keys() {
-		return ( '' !== $this->get_stored_option( 'olic_site_key' ) && '' !== $this->get_stored_option( 'olic_secret_key' ) );
+		return ( '' !== $this->get_stored_option( 'oli_occ_site_key' ) && '' !== $this->get_stored_option( 'oli_occ_secret_key' ) );
 	}
 
 	/**
@@ -1057,14 +1057,14 @@ class Olic_Checkout_Captcha {
 	 * @return string
 	 */
 	private function get_provider() {
-		$provider = sanitize_key( $this->get_stored_option( 'olic_provider', Olic_Verifier::PROVIDER_RECAPTCHA_V2 ) );
+		$provider = sanitize_key( $this->get_stored_option( 'oli_occ_provider', Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2 ) );
 		$allowed  = array(
-			Olic_Verifier::PROVIDER_RECAPTCHA_V2,
-			Olic_Verifier::PROVIDER_RECAPTCHA_V3,
-			Olic_Verifier::PROVIDER_TURNSTILE,
+			Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2,
+			Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3,
+			Oli_OCC_Verifier::PROVIDER_TURNSTILE,
 		);
 
-		return in_array( $provider, $allowed, true ) ? $provider : Olic_Verifier::PROVIDER_RECAPTCHA_V2;
+		return in_array( $provider, $allowed, true ) ? $provider : Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2;
 	}
 
 	/**
@@ -1075,14 +1075,14 @@ class Olic_Checkout_Captcha {
 	 * @return string
 	 */
 	private function get_theme() {
-		$theme   = sanitize_key( $this->get_stored_option( 'olic_theme', 'light' ) );
+		$theme   = sanitize_key( $this->get_stored_option( 'oli_occ_theme', 'light' ) );
 		$allowed = array( 'light', 'dark', 'auto' );
 
 		if ( ! in_array( $theme, $allowed, true ) ) {
 			return 'light';
 		}
 
-		if ( 'auto' === $theme && Olic_Verifier::PROVIDER_TURNSTILE !== $this->get_provider() ) {
+		if ( 'auto' === $theme && Oli_OCC_Verifier::PROVIDER_TURNSTILE !== $this->get_provider() ) {
 			return 'light';
 		}
 
@@ -1097,7 +1097,7 @@ class Olic_Checkout_Captcha {
 	 * @return float
 	 */
 	private function get_score_threshold() {
-		$score = (float) $this->get_stored_option( 'olic_score_threshold', '0.5' );
+		$score = (float) $this->get_stored_option( 'oli_occ_score_threshold', '0.5' );
 		if ( $score < 0 ) {
 			return 0.0;
 		}
@@ -1116,7 +1116,7 @@ class Olic_Checkout_Captcha {
 	 * @return bool
 	 */
 	private function is_fail_closed() {
-		return ( '1' === $this->get_stored_option( 'olic_fail_closed', '1' ) );
+		return ( '1' === $this->get_stored_option( 'oli_occ_fail_closed', '1' ) );
 	}
 
 	/**
@@ -1127,7 +1127,7 @@ class Olic_Checkout_Captcha {
 	 * @return bool
 	 */
 	private function is_rate_limit_enabled() {
-		return ( '1' === $this->get_stored_option( 'olic_rate_limit_enabled', '0' ) );
+		return ( '1' === $this->get_stored_option( 'oli_occ_rate_limit_enabled', '0' ) );
 	}
 
 	/**
@@ -1138,7 +1138,7 @@ class Olic_Checkout_Captcha {
 	 * @return int
 	 */
 	private function get_rate_limit_max() {
-		return max( 1, absint( $this->get_stored_option( 'olic_rate_limit_max', '10' ) ) );
+		return max( 1, absint( $this->get_stored_option( 'oli_occ_rate_limit_max', '10' ) ) );
 	}
 
 	/**
@@ -1149,7 +1149,7 @@ class Olic_Checkout_Captcha {
 	 * @return int
 	 */
 	private function get_rate_limit_window() {
-		return max( 60, absint( $this->get_stored_option( 'olic_rate_limit_window', '900' ) ) );
+		return max( 60, absint( $this->get_stored_option( 'oli_occ_rate_limit_window', '900' ) ) );
 	}
 
 	/**
@@ -1249,10 +1249,10 @@ class Olic_Checkout_Captcha {
 			}
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin page identifier.
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// Core sets $plugin_page from the sanitized admin.php request before admin_enqueue_scripts.
+		global $plugin_page;
 
-		return ( 'oli-checkout-captcha' === $page );
+		return ( is_string( $plugin_page ) && 'oli-checkout-captcha' === $plugin_page );
 	}
 
 	/**
@@ -1263,15 +1263,18 @@ class Olic_Checkout_Captcha {
 	 * @return string
 	 */
 	private function get_token_from_post() {
-		$keys = array( 'olic_captcha_token', 'g-recaptcha-response', 'cf-turnstile-response' );
+		// Classic checkout: same nonce WooCommerce checks before woocommerce_checkout_process.
+		if ( ! isset( $_POST['woocommerce-process-checkout-nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce-process-checkout-nonce'] ) ), 'woocommerce-process_checkout' ) ) {
+			return '';
+		}
+
+		$keys = array( 'oli_occ_captcha_token', 'g-recaptcha-response', 'cf-turnstile-response' );
 
 		foreach ( $keys as $key ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before woocommerce_checkout_process.
 			if ( ! isset( $_POST[ $key ] ) ) {
 				continue;
 			}
 
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before woocommerce_checkout_process.
 			$token = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
 			if ( '' !== $token ) {
 				return $token;
@@ -1327,13 +1330,13 @@ class Olic_Checkout_Captcha {
 	 * @return bool
 	 */
 	private function is_express_checkout( $request ) {
-		if ( ! apply_filters( 'olic_skip_express_payments', true, $request ) ) {
+		if ( ! apply_filters( 'oli_occ_skip_express_payments', true, $request ) ) {
 			return false;
 		}
 
 		$method = $this->get_payment_method( $request );
 		$ids    = apply_filters(
-			'olic_express_payment_ids',
+			'oli_occ_express_payment_ids',
 			array(
 				'apple_pay',
 				'google_pay',
@@ -1406,12 +1409,14 @@ class Olic_Checkout_Captcha {
 			return is_string( $method ) ? sanitize_text_field( $method ) : '';
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
+		if ( ! isset( $_POST['woocommerce-process-checkout-nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce-process-checkout-nonce'] ) ), 'woocommerce-process_checkout' ) ) {
+			return '';
+		}
+
 		if ( ! isset( $_POST['payment_method'] ) ) {
 			return '';
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
 		return sanitize_text_field( wp_unslash( $_POST['payment_method'] ) );
 	}
 
@@ -1440,6 +1445,10 @@ class Olic_Checkout_Captcha {
 			}
 		}
 
+		if ( ! isset( $_POST['woocommerce-process-checkout-nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce-process-checkout-nonce'] ) ), 'woocommerce-process_checkout' ) ) {
+			return $map;
+		}
+
 		$post_keys = array(
 			'paymentRequestType',
 			'payment_request_type',
@@ -1448,12 +1457,10 @@ class Olic_Checkout_Captcha {
 		);
 
 		foreach ( $post_keys as $key ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
 			if ( ! isset( $_POST[ $key ] ) ) {
 				continue;
 			}
 
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before this runs.
 			$map[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
 		}
 

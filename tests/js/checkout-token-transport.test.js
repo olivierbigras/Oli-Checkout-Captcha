@@ -26,7 +26,7 @@ function createElement(id) {
 function loadCheckout(options) {
 	options = options || {};
 
-	const tokenField = createElement('olic-captcha-token');
+	const tokenField = createElement('oli-occ-captcha-token');
 	const extensionCalls = [];
 	const apiFetchMiddlewares = [];
 	const wcBlocksDataAccesses = [];
@@ -84,7 +84,7 @@ function loadCheckout(options) {
 	const documentRef = {
 		readyState: 'complete',
 		getElementById: function (id) {
-			return id === 'olic-captcha-token' ? tokenField : null;
+			return id === 'oli-occ-captcha-token' ? tokenField : null;
 		},
 		querySelector: function () { return null; },
 		querySelectorAll: function () { return []; },
@@ -93,7 +93,7 @@ function loadCheckout(options) {
 	};
 
 	const windowRef = {
-		olicConfig: {
+		oliOccConfig: {
 			namespace: 'oli-checkout-captcha',
 			provider: 'turnstile',
 			siteKey: '1x00000000000000000000AA'
@@ -131,7 +131,7 @@ function loadCheckout(options) {
 	vm.runInNewContext(SCRIPT, {
 		window: windowRef,
 		document: documentRef,
-		olicConfig: windowRef.olicConfig,
+		oliOccConfig: windowRef.oliOccConfig,
 		wp: wp,
 		turnstile: undefined,
 		grecaptcha: undefined,
@@ -169,7 +169,7 @@ function loadCheckout(options) {
 test('persistToken keeps the token locally and does not write the checkout store', function () {
 	const env = loadCheckout({ withApiFetch: true, withOrderAttribution: true });
 
-	env.window.olicCaptchaCallback('tok-load-1');
+	env.window.oliOccCaptchaCallback('tok-load-1');
 
 	assert.equal(env.tokenField.value, 'tok-load-1');
 	assert.deepEqual(env.extensionCalls, []);
@@ -179,7 +179,7 @@ test('persistToken keeps the token locally and does not write the checkout store
 test('apiFetch checkout POST injects the captcha token without touching wc.wcBlocksData', function () {
 	const env = loadCheckout({ withApiFetch: true, withOrderAttribution: true });
 
-	env.window.olicCaptchaCallback('tok-place-order');
+	env.window.oliOccCaptchaCallback('tok-place-order');
 	const request = env.runCheckoutPost({ billing_address: { first_name: 'Ada' } });
 
 	assert.equal(request.data.billing_address.first_name, 'Ada');
@@ -191,7 +191,7 @@ test('apiFetch checkout POST injects the captcha token without touching wc.wcBlo
 test('without apiFetch, isBeforeProcessing flushes via setExtensionData', function () {
 	const env = loadCheckout({ withApiFetch: false, withOrderAttribution: false });
 
-	env.window.olicCaptchaCallback('tok-fallback');
+	env.window.oliOccCaptchaCallback('tok-fallback');
 	assert.deepEqual(env.extensionCalls, []);
 
 	env.setBeforeProcessing(true);
@@ -205,7 +205,7 @@ test('without apiFetch, isBeforeProcessing flushes via setExtensionData', functi
 test('setExtensionData on the stack makes WooCommerce order-attribution access wc.wcBlocksData', function () {
 	const env = loadCheckout({ withApiFetch: false, withOrderAttribution: true });
 
-	env.window.olicCaptchaCallback('tok-oa');
+	env.window.oliOccCaptchaCallback('tok-oa');
 	assert.deepEqual(env.wcBlocksDataAccesses, [], 'token refresh must not poke order-attribution');
 
 	env.setBeforeProcessing(true);

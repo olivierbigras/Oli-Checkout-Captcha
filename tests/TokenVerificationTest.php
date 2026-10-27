@@ -2,22 +2,22 @@
 /**
  * Server-side captcha token verification tests (HTTP mocked).
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 use PHPUnit\Framework\TestCase;
 
-require_once dirname( __DIR__ ) . '/includes/class-olic-verifier.php';
+require_once dirname( __DIR__ ) . '/includes/class-oli-occ-verifier.php';
 
 /**
- * Covers Olic_Verifier with wp_remote_post mocked.
+ * Covers Oli_OCC_Verifier with wp_remote_post mocked.
  */
 class TokenVerificationTest extends TestCase {
 
 	/**
 	 * Verifier under test.
 	 *
-	 * @var Olic_Verifier
+	 * @var Oli_OCC_Verifier
 	 */
 	private $verifier;
 
@@ -28,9 +28,9 @@ class TokenVerificationTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$GLOBALS['olic_test_http_requests'] = array();
-		$GLOBALS['olic_test_http_response'] = null;
-		$this->verifier                     = new Olic_Verifier();
+		$GLOBALS['oli_occ_test_http_requests'] = array();
+		$GLOBALS['oli_occ_test_http_response'] = null;
+		$this->verifier                     = new Oli_OCC_Verifier();
 	}
 
 	/**
@@ -43,7 +43,7 @@ class TokenVerificationTest extends TestCase {
 
 		$this->assertFalse( $result['ok'] );
 		$this->assertSame( 'Please complete the captcha verification.', $result['message'] );
-		$this->assertSame( array(), $GLOBALS['olic_test_http_requests'] );
+		$this->assertSame( array(), $GLOBALS['oli_occ_test_http_requests'] );
 	}
 
 	/**
@@ -59,7 +59,7 @@ class TokenVerificationTest extends TestCase {
 
 		$this->assertFalse( $result['ok'] );
 		$this->assertSame( 'Captcha is not configured.', $result['message'] );
-		$this->assertSame( array(), $GLOBALS['olic_test_http_requests'] );
+		$this->assertSame( array(), $GLOBALS['oli_occ_test_http_requests'] );
 	}
 
 	/**
@@ -70,22 +70,22 @@ class TokenVerificationTest extends TestCase {
 	public function test_recaptcha_v2_success() {
 		$this->mock_json(
 			array( 'success' => true ),
-			Olic_Verifier::RECAPTCHA_VERIFY_URL
+			Oli_OCC_Verifier::RECAPTCHA_VERIFY_URL
 		);
 
 		$result = $this->verifier->verify( 'v2-token', $this->settings() );
 
 		$this->assertTrue( $result['ok'] );
 		$this->assertFalse( $result['http_failed'] );
-		$this->assertCount( 1, $GLOBALS['olic_test_http_requests'] );
-		$this->assertSame( Olic_Verifier::RECAPTCHA_VERIFY_URL, $GLOBALS['olic_test_http_requests'][0]['url'] );
+		$this->assertCount( 1, $GLOBALS['oli_occ_test_http_requests'] );
+		$this->assertSame( Oli_OCC_Verifier::RECAPTCHA_VERIFY_URL, $GLOBALS['oli_occ_test_http_requests'][0]['url'] );
 		$this->assertSame(
 			array(
 				'secret'   => 'test-secret',
 				'response' => 'v2-token',
 				'remoteip' => '203.0.113.10',
 			),
-			$GLOBALS['olic_test_http_requests'][0]['args']['body']
+			$GLOBALS['oli_occ_test_http_requests'][0]['args']['body']
 		);
 	}
 
@@ -110,7 +110,7 @@ class TokenVerificationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_http_error_fails_closed() {
-		$GLOBALS['olic_test_http_response'] = new WP_Error( 'http_request_failed', 'timeout' );
+		$GLOBALS['oli_occ_test_http_response'] = new WP_Error( 'http_request_failed', 'timeout' );
 
 		$result = $this->verifier->verify( 'token-value', $this->settings( array( 'fail_closed' => true ) ) );
 
@@ -125,7 +125,7 @@ class TokenVerificationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_http_error_fails_open() {
-		$GLOBALS['olic_test_http_response'] = new WP_Error( 'http_request_failed', 'timeout' );
+		$GLOBALS['oli_occ_test_http_response'] = new WP_Error( 'http_request_failed', 'timeout' );
 
 		$result = $this->verifier->verify( 'token-value', $this->settings( array( 'fail_closed' => false ) ) );
 
@@ -139,7 +139,7 @@ class TokenVerificationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_invalid_json_fails_closed() {
-		$GLOBALS['olic_test_http_response'] = $this->http_response( '<html>nope</html>', 200 );
+		$GLOBALS['oli_occ_test_http_response'] = $this->http_response( '<html>nope</html>', 200 );
 
 		$result = $this->verifier->verify( 'token-value', $this->settings( array( 'fail_closed' => true ) ) );
 
@@ -165,7 +165,7 @@ class TokenVerificationTest extends TestCase {
 			'v3-token',
 			$this->settings(
 				array(
-					'provider'        => Olic_Verifier::PROVIDER_RECAPTCHA_V3,
+					'provider'        => Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3,
 					'score_threshold' => 0.5,
 				)
 			)
@@ -193,7 +193,7 @@ class TokenVerificationTest extends TestCase {
 			'v3-token',
 			$this->settings(
 				array(
-					'provider'        => Olic_Verifier::PROVIDER_RECAPTCHA_V3,
+					'provider'        => Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3,
 					'score_threshold' => 0.5,
 					'expected_action' => 'checkout',
 				)
@@ -222,7 +222,7 @@ class TokenVerificationTest extends TestCase {
 			'v3-token',
 			$this->settings(
 				array(
-					'provider'        => Olic_Verifier::PROVIDER_RECAPTCHA_V3,
+					'provider'        => Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V3,
 					'score_threshold' => 0.5,
 					'expected_action' => 'checkout',
 				)
@@ -241,17 +241,17 @@ class TokenVerificationTest extends TestCase {
 	public function test_turnstile_success_uses_cloudflare_endpoint() {
 		$this->mock_json(
 			array( 'success' => true ),
-			Olic_Verifier::TURNSTILE_VERIFY_URL
+			Oli_OCC_Verifier::TURNSTILE_VERIFY_URL
 		);
 
 		$result = $this->verifier->verify(
 			'turnstile-token',
-			$this->settings( array( 'provider' => Olic_Verifier::PROVIDER_TURNSTILE ) )
+			$this->settings( array( 'provider' => Oli_OCC_Verifier::PROVIDER_TURNSTILE ) )
 		);
 
 		$this->assertTrue( $result['ok'] );
-		$this->assertSame( Olic_Verifier::TURNSTILE_VERIFY_URL, $GLOBALS['olic_test_http_requests'][0]['url'] );
-		$this->assertSame( 'turnstile-token', $GLOBALS['olic_test_http_requests'][0]['args']['body']['response'] );
+		$this->assertSame( Oli_OCC_Verifier::TURNSTILE_VERIFY_URL, $GLOBALS['oli_occ_test_http_requests'][0]['url'] );
+		$this->assertSame( 'turnstile-token', $GLOBALS['oli_occ_test_http_requests'][0]['args']['body']['response'] );
 	}
 
 	/**
@@ -262,12 +262,12 @@ class TokenVerificationTest extends TestCase {
 	public function test_turnstile_failure() {
 		$this->mock_json(
 			array( 'success' => false ),
-			Olic_Verifier::TURNSTILE_VERIFY_URL
+			Oli_OCC_Verifier::TURNSTILE_VERIFY_URL
 		);
 
 		$result = $this->verifier->verify(
 			'turnstile-token',
-			$this->settings( array( 'provider' => Olic_Verifier::PROVIDER_TURNSTILE ) )
+			$this->settings( array( 'provider' => Oli_OCC_Verifier::PROVIDER_TURNSTILE ) )
 		);
 
 		$this->assertFalse( $result['ok'] );
@@ -279,7 +279,7 @@ class TokenVerificationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_http_500_fails_closed() {
-		$GLOBALS['olic_test_http_response'] = $this->http_response( '{"success":true}', 500 );
+		$GLOBALS['oli_occ_test_http_response'] = $this->http_response( '{"success":true}', 500 );
 
 		$result = $this->verifier->verify( 'token-value', $this->settings( array( 'fail_closed' => true ) ) );
 
@@ -296,7 +296,7 @@ class TokenVerificationTest extends TestCase {
 	private function settings( $overrides = array() ) {
 		return array_merge(
 			array(
-				'provider'        => Olic_Verifier::PROVIDER_RECAPTCHA_V2,
+				'provider'        => Oli_OCC_Verifier::PROVIDER_RECAPTCHA_V2,
 				'secret'          => 'test-secret',
 				'remote_ip'       => '203.0.113.10',
 				'score_threshold' => 0.5,
@@ -316,7 +316,7 @@ class TokenVerificationTest extends TestCase {
 	 */
 	private function mock_json( $payload, $url = null ) {
 		unset( $url );
-		$GLOBALS['olic_test_http_response'] = $this->http_response( json_encode( $payload ), 200 );
+		$GLOBALS['oli_occ_test_http_response'] = $this->http_response( json_encode( $payload ), 200 );
 	}
 
 	/**

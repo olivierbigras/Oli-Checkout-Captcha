@@ -2,7 +2,7 @@
 /**
  * Server-side captcha token verification.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.2.0
  */
-class Olic_Verifier {
+class Oli_OCC_Verifier {
 
 	/**
 	 * reCAPTCHA v2 checkbox provider.

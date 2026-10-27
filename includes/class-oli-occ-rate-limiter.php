@@ -2,7 +2,7 @@
 /**
  * Optional failed-attempt rate limiter.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.2.0
  */
-class Olic_Rate_Limiter {
+class Oli_OCC_Rate_Limiter {
 
 	/**
 	 * Transient key prefix.
@@ -22,7 +22,7 @@ class Olic_Rate_Limiter {
 	 * @since 1.2.0
 	 * @var string
 	 */
-	const KEY_PREFIX = 'olic_rl_';
+	const KEY_PREFIX = 'oli_occ_rl_';
 
 	/**
 	 * Whether rate limiting is enabled.
@@ -32,7 +32,7 @@ class Olic_Rate_Limiter {
 	 * @return bool
 	 */
 	public function is_enabled() {
-		return ( '1' === (string) get_option( 'olic_rate_limit_enabled', '0' ) );
+		return ( '1' === (string) get_option( 'oli_occ_rate_limit_enabled', '0' ) );
 	}
 
 	/**
@@ -104,6 +104,6 @@ class Olic_Rate_Limiter {
 	 * @return string
 	 */
 	private function get_key( $ip ) {
-		return self::KEY_PREFIX . substr( hash( 'sha256', 'olic|' . $ip ), 0, 20 );
+		return self::KEY_PREFIX . substr( hash( 'sha256', 'olic|' . $ip ), 0, 20 ); // Hash salt kept from 1.2.5 so migrated counters keep matching.
 	}
 }

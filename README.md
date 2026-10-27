@@ -16,7 +16,7 @@ WordPress plugin that blocks bots and card testing at WooCommerce checkout with 
 5. Optionally set the v3 score threshold, fail-closed behavior, and failed-attempt rate limiting.
 6. Save changes.
 
-Existing `rbc_*` options from earlier versions are migrated automatically to `olic_*` on `plugins_loaded`. In-place updates that keep the previous folder name stay active through `recaptcha-block-checkout.php`.
+Existing `rbc_*` options from earlier versions are migrated automatically to `oli_occ_*` on `plugins_loaded`. In-place updates that keep the previous folder name stay active through `recaptcha-block-checkout.php`.
 
 This plugin does not track shoppers.
 

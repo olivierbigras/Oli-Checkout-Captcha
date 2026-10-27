@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap with lightweight WordPress function stubs.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

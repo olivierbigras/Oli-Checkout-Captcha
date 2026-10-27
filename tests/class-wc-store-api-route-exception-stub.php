@@ -2,7 +2,7 @@
 /**
  * WooCommerce Store API RouteException stub for unit tests.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 namespace Automattic\WooCommerce\StoreApi\Exceptions;

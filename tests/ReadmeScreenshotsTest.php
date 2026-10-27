@@ -2,7 +2,7 @@
 /**
  * readme.txt screenshot captions.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
 use PHPUnit\Framework\TestCase;

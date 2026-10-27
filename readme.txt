@@ -4,7 +4,7 @@ Tags: recaptcha, turnstile, woocommerce, checkout, spam
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -61,7 +61,7 @@ This plugin does not track shoppers and does not send analytics or telemetry.
 5. Optionally set the reCAPTCHA v3 score threshold, fail-closed behavior, and failed-attempt rate limiting.
 6. Save changes.
 
-Existing sites that used the previous plugin slug or `rbc_` options are migrated automatically to the `olic_` options on `plugins_loaded`, without requiring a reactivation. In-place updates that keep the previous folder name continue to load through a legacy bootstrap file.
+Existing sites that used the previous plugin slug or `rbc_` options are migrated automatically to the `oli_occ_` options on `plugins_loaded`. Version 1.2.6 also moves the 1.2.5 `olic_` settings and rate-limit counters to `oli_occ_` once, then removes the old rows, without requiring a reactivation. In-place updates that keep the previous folder name continue to load through a legacy bootstrap file.
 
 == Frequently Asked Questions ==
 
@@ -154,6 +154,13 @@ You are responsible for mentioning the selected captcha provider in your own sit
 
 == Changelog ==
 
+= 1.2.6 - 2026-10-27 =
+* Renamed the internal prefix from `olic` to `oli_occ` (functions, classes, constants, options, transients, hooks, script handles, field names and JavaScript globals).
+* Settings and live rate-limit counters are migrated once to the new names on activation or update, without loss; old rows are deleted only after a verified copy, and reads fall back to them until then.
+* Filter names changed to `oli_occ_skip_express_payments`, `oli_occ_express_payment_ids` and `oli_occ_captcha_failed`.
+* Classic checkout fields are read only after the WooCommerce checkout nonce is verified.
+* Database queries use `%i` identifier placeholders; uninstall removes both old and new option names.
+
 = 1.2.5 - 2026-10-26 =
 * Uninstall now removes the rate-limit transients.
 
@@ -210,6 +217,9 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * HPOS compatibility
 
 == Upgrade Notice ==
+
+= 1.2.6 =
+Internal prefix renamed to oli_occ. Your settings are migrated automatically on update. If you used the olic_* filters in custom code, rename them to oli_occ_*.
 
 = 1.2.5 =
 Uninstall now removes the rate-limit transients.

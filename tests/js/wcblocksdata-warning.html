@@ -6,11 +6,11 @@
 </head>
 <body>
 	<div class="wp-block-woocommerce-checkout wc-block-checkout"></div>
-	<input type="hidden" id="olic-captcha-token" value="">
+	<input type="hidden" id="oli-occ-captcha-token" value="">
 	<pre id="results"></pre>
 	<script>
 	(function () {
-		window.__olicProbe = {
+		window.__oliOccProbe = {
 			warnings: [],
 			extensionCalls: [],
 			accesses: [],
@@ -21,11 +21,11 @@
 		var beforeProcessing = false;
 		var checkoutDispatch = {
 			setExtensionData: function (namespace, data) {
-				window.__olicProbe.extensionCalls.push({ api: 'setExtensionData', namespace: namespace, data: data });
+				window.__oliOccProbe.extensionCalls.push({ api: 'setExtensionData', namespace: namespace, data: data });
 				subscribers.slice().forEach(function (fn) { fn(); });
 			},
 			__internalSetExtensionData: function (namespace, data) {
-				window.__olicProbe.extensionCalls.push({ api: '__internalSetExtensionData', namespace: namespace, data: data });
+				window.__oliOccProbe.extensionCalls.push({ api: '__internalSetExtensionData', namespace: namespace, data: data });
 				subscribers.slice().forEach(function (fn) { fn(); });
 			}
 		};
@@ -34,8 +34,8 @@
 			{ CHECKOUT_STORE_KEY: 'wc/store/checkout' },
 			{
 				get: function (target, prop) {
-					window.__olicProbe.accesses.push(String(prop));
-					window.__olicProbe.warnings.push(
+					window.__oliOccProbe.accesses.push(String(prop));
+					window.__oliOccProbe.warnings.push(
 						'[WooCommerce] An inline or unknown script accessed wc.wcBlocksData without proper dependency declaration'
 					);
 					return target[prop];
@@ -44,7 +44,7 @@
 		);
 
 		var apiFetchMiddlewares = [];
-		window.olicConfig = {
+		window.oliOccConfig = {
 			namespace: 'oli-checkout-captcha',
 			provider: 'turnstile',
 			siteKey: '1x00000000000000000000AA'
@@ -85,19 +85,19 @@
 			}
 		});
 
-		window.__olicProbe.runCheckoutPost = function () {
+		window.__oliOccProbe.runCheckoutPost = function () {
 			var options = {
 				path: '/wp-json/wc/store/v1/checkout',
 				method: 'POST',
 				data: { billing_address: {} }
 			};
 			apiFetchMiddlewares[0](options, function (nextOptions) {
-				window.__olicProbe.apiFetchPosts.push(nextOptions);
+				window.__oliOccProbe.apiFetchPosts.push(nextOptions);
 				return Promise.resolve({ ok: true });
 			});
 		};
 
-		window.__olicProbe.setBeforeProcessing = function (value) {
+		window.__oliOccProbe.setBeforeProcessing = function (value) {
 			beforeProcessing = !!value;
 			subscribers.slice().forEach(function (fn) { fn(); });
 		};
@@ -106,25 +106,25 @@
 	<script src="../../js/checkout.js"></script>
 	<script>
 	(function () {
-		window.olicCaptchaCallback('browser-token');
+		window.oliOccCaptchaCallback('browser-token');
 		var afterRefresh = {
-			warnings: window.__olicProbe.warnings.slice(),
-			accesses: window.__olicProbe.accesses.slice(),
-			extensionCalls: window.__olicProbe.extensionCalls.slice(),
-			field: document.getElementById('olic-captcha-token').value
+			warnings: window.__oliOccProbe.warnings.slice(),
+			accesses: window.__oliOccProbe.accesses.slice(),
+			extensionCalls: window.__oliOccProbe.extensionCalls.slice(),
+			field: document.getElementById('oli-occ-captcha-token').value
 		};
-		window.__olicProbe.runCheckoutPost();
+		window.__oliOccProbe.runCheckoutPost();
 		var afterPost = {
-			warnings: window.__olicProbe.warnings.slice(),
-			accesses: window.__olicProbe.accesses.slice(),
-			token: window.__olicProbe.apiFetchPosts[0].data.extensions['oli-checkout-captcha'].token
+			warnings: window.__oliOccProbe.warnings.slice(),
+			accesses: window.__oliOccProbe.accesses.slice(),
+			token: window.__oliOccProbe.apiFetchPosts[0].data.extensions['oli-checkout-captcha'].token
 		};
 
-		window.__olicResults = {
+		window.__oliOccResults = {
 			afterTokenRefresh: afterRefresh,
 			afterPlaceOrderPost: afterPost
 		};
-		document.getElementById('results').textContent = JSON.stringify(window.__olicResults, null, 2);
+		document.getElementById('results').textContent = JSON.stringify(window.__oliOccResults, null, 2);
 	})();
 	</script>
 </body>
