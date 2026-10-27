@@ -18,6 +18,7 @@ All notable changes to this project are documented in this file and in `readme.t
 
 - Le paiement classique ne lit `$_POST` qu'après vérification du nonce WooCommerce `woocommerce-process_checkout`.
 - Requêtes SQL avec `%i` pour les identifiants ; la désinstallation supprime les anciens et les nouveaux noms.
+- WordPress 6.2 minimum (`%i`), déjà exigé par WooCommerce 8.0.
 
 ## 1.2.5 - 2026-10-26
 

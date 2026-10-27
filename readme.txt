@@ -1,7 +1,7 @@
 === Oli Checkout Captcha ===
 Contributors: bigrat95
 Tags: recaptcha, turnstile, woocommerce, checkout, spam
-Requires at least: 6.0
+Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.2.6
@@ -160,6 +160,7 @@ You are responsible for mentioning the selected captcha provider in your own sit
 * Filter names changed to `oli_occ_skip_express_payments`, `oli_occ_express_payment_ids` and `oli_occ_captcha_failed`.
 * Classic checkout fields are read only after the WooCommerce checkout nonce is verified.
 * Database queries use `%i` identifier placeholders; uninstall removes both old and new option names.
+* Requires WordPress 6.2 or later (already required by WooCommerce 8.0).
 
 = 1.2.5 - 2026-10-26 =
 * Uninstall now removes the rate-limit transients.
