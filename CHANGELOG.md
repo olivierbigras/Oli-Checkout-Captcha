@@ -7,12 +7,13 @@ All notable changes to this project are documented in this file and in `readme.t
 ### Modifié
 
 - Préfixe interne renommé de `olic` à `oli_occ` (fonctions, classes, constantes, options, transients, hooks, handles de scripts, noms de champs et globales JavaScript). Fichiers renommés : `includes/class-oli-occ-*.php` et `includes/oli-occ-upgrade.php`.
-- Filtres renommés : `oli_occ_skip_express_payments`, `oli_occ_express_payment_ids`, `oli_occ_captcha_failed`.
+- Filtres renommés : `oli_occ_skip_express_payments`, `oli_occ_express_payment_ids`. Anciens noms `olic_*` dépréciés, toujours honorés (appliqués avant les nouveaux via `apply_filters_deprecated`, seulement s'ils ont un callback).
+- Code d'erreur Store API du captcha : `oli_occ_captcha_failed` (anciennement `olic_captcha_failed`).
 
 ### Ajouté
 
 - Migration unique (option `oli_occ_db_version`) à l'activation ou à la mise à jour : copie des options `olic_*` et des compteurs `olic_rl_*` (avec leur durée restante) vers `oli_occ_*`, sans écraser une valeur existante ; les anciennes lignes ne sont supprimées qu'après vérification de la copie. Lecture de repli sur l'ancienne option tant qu'elle existe.
-- Tests PHPUnit de la migration et de la vérification du nonce.
+- Tests PHPUnit de la migration, de la vérification du nonce et des alias de filtres dépréciés.
 
 ### Sécurité
 

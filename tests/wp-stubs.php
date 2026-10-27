@@ -868,3 +868,34 @@ if ( ! function_exists( 'wp_verify_nonce' ) ) {
 		return ( 'valid-' . $action === $nonce ) ? 1 : false;
 	}
 }
+
+if ( ! function_exists( 'has_filter' ) ) {
+	/**
+	 * Whether a callback is attached to a hook.
+	 *
+	 * @param string $hook Hook name.
+	 * @return bool
+	 */
+	function has_filter( $hook ) {
+		return ! empty( $GLOBALS['oli_occ_test_filters'][ $hook ] );
+	}
+}
+
+if ( ! function_exists( 'apply_filters_deprecated' ) ) {
+	/**
+	 * Apply a deprecated filter and record the notice.
+	 *
+	 * @param string $hook        Hook name.
+	 * @param array  $args        Arguments.
+	 * @param string $version     Version.
+	 * @param string $replacement Replacement hook.
+	 * @return mixed
+	 */
+	function apply_filters_deprecated( $hook, $args, $version, $replacement = '' ) {
+		if ( ! has_filter( $hook ) ) {
+			return $args[0];
+		}
+		$GLOBALS['oli_occ_test_deprecated'][] = array( $hook, $version, $replacement );
+		return apply_filters( $hook, ...$args );
+	}
+}

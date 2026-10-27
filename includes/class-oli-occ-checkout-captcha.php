@@ -1330,28 +1330,50 @@ class Oli_OCC_Checkout_Captcha {
 	 * @return bool
 	 */
 	private function is_express_checkout( $request ) {
-		if ( ! apply_filters( 'oli_occ_skip_express_payments', true, $request ) ) {
+		$skip = true;
+		if ( has_filter( 'olic_skip_express_payments' ) ) {
+			$skip = apply_filters_deprecated( 'olic_skip_express_payments', array( $skip, $request ), '1.2.6', 'oli_occ_skip_express_payments' );
+		}
+
+		/**
+		 * Whether express payments (Apple Pay, Google Pay...) skip the captcha.
+		 *
+		 * @since 1.2.6 Previously olic_skip_express_payments (deprecated, still applied first).
+		 *
+		 * @param bool                 $skip    Default true.
+		 * @param WP_REST_Request|null $request Store API request, or null on classic checkout.
+		 */
+		if ( ! apply_filters( 'oli_occ_skip_express_payments', $skip, $request ) ) {
 			return false;
 		}
 
 		$method = $this->get_payment_method( $request );
-		$ids    = apply_filters(
-			'oli_occ_express_payment_ids',
-			array(
-				'apple_pay',
-				'google_pay',
-				'stripe_applepay',
-				'stripe_googlepay',
-				'stripe_payment_request',
-				'payment_request',
-				'woocommerce_payments_apple_pay',
-				'woocommerce_payments_google_pay',
-				'ppcp-applepay',
-				'ppcp-googlepay',
-				'amazon_payments_advanced',
-			),
-			$request
+		$ids    = array(
+			'apple_pay',
+			'google_pay',
+			'stripe_applepay',
+			'stripe_googlepay',
+			'stripe_payment_request',
+			'payment_request',
+			'woocommerce_payments_apple_pay',
+			'woocommerce_payments_google_pay',
+			'ppcp-applepay',
+			'ppcp-googlepay',
+			'amazon_payments_advanced',
 		);
+		if ( has_filter( 'olic_express_payment_ids' ) ) {
+			$ids = apply_filters_deprecated( 'olic_express_payment_ids', array( $ids, $request ), '1.2.6', 'oli_occ_express_payment_ids' );
+		}
+
+		/**
+		 * Payment method IDs treated as express payments.
+		 *
+		 * @since 1.2.6 Previously olic_express_payment_ids (deprecated, still applied first).
+		 *
+		 * @param string[]             $ids     Gateway IDs.
+		 * @param WP_REST_Request|null $request Store API request, or null on classic checkout.
+		 */
+		$ids = (array) apply_filters( 'oli_occ_express_payment_ids', $ids, $request );
 
 		if ( '' !== $method && in_array( $method, $ids, true ) ) {
 			return true;

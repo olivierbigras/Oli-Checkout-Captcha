@@ -157,7 +157,8 @@ You are responsible for mentioning the selected captcha provider in your own sit
 = 1.2.6 - 2026-10-27 =
 * Renamed the internal prefix from `olic` to `oli_occ` (functions, classes, constants, options, transients, hooks, script handles, field names and JavaScript globals).
 * Settings and live rate-limit counters are migrated once to the new names on activation or update, without loss; old rows are deleted only after a verified copy, and reads fall back to them until then.
-* Filter names changed to `oli_occ_skip_express_payments`, `oli_occ_express_payment_ids` and `oli_occ_captcha_failed`.
+* Filters renamed to `oli_occ_skip_express_payments` and `oli_occ_express_payment_ids`. The old `olic_*` names are deprecated but still honored (applied first, with a deprecation notice when `WP_DEBUG` is on).
+* The Store API error code for a failed captcha is now `oli_occ_captcha_failed` (was `olic_captcha_failed`).
 * Classic checkout fields are read only after the WooCommerce checkout nonce is verified.
 * Database queries use `%i` identifier placeholders; uninstall removes both old and new option names.
 * Requires WordPress 6.2 or later (already required by WooCommerce 8.0).
@@ -220,7 +221,7 @@ You are responsible for mentioning the selected captcha provider in your own sit
 == Upgrade Notice ==
 
 = 1.2.6 =
-Internal prefix renamed to oli_occ. Your settings are migrated automatically on update. If you used the olic_* filters in custom code, rename them to oli_occ_*.
+Internal prefix renamed to oli_occ. Your settings are migrated automatically on update. The old olic_* filter names are deprecated but still honored; rename them to oli_occ_* when convenient.
 
 = 1.2.5 =
 Uninstall now removes the rate-limit transients.
