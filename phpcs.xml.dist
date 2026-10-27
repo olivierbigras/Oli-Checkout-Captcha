@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="Oli Checkout Captcha">
-	<description>WordPress coding standards for Oli Checkout Captcha.</description>
+	<description>WordPress-Extra coding standards for Oli Checkout Captcha.</description>
 
 	<file>.</file>
 
@@ -16,16 +16,17 @@
 	<arg name="basepath" value="."/>
 	<arg value="sp"/>
 
-	<config name="minimum_supported_wp_version" value="6.0"/>
+	<config name="minimum_supported_wp_version" value="6.2"/>
+	<config name="text_domain" value="oli-checkout-captcha"/>
 
-	<rule ref="WordPress">
+	<rule ref="WordPress-Extra">
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
 	</rule>
 
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="olic"/>
+				<element value="oli_occ"/><element value="Oli_OCC"/><element value="OLI_OCC"/><element value="oliOcc"/>
 			</property>
 		</properties>
 	</rule>

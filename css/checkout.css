@@ -1,4 +1,16 @@
-.olic-recaptcha-container {
+.oli-occ-captcha-container {
 	margin: 20px 0;
 	padding: 15px 0;
+}
+
+.oli-occ-captcha-container--v3 {
+	margin: 0;
+	padding: 0;
+	height: 0;
+	overflow: hidden;
+}
+
+.wc-block-components-express-payment .oli-occ-captcha-container,
+.wc-block-components-express-payment-continue-rule .oli-occ-captcha-container {
+	display: none;
 }

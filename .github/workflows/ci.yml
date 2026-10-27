@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  phpcs:
+    name: PHPCS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run PHPCS (WordPress-Extra)
+        run: vendor/bin/phpcs
+
+  test:
+    name: PHPUnit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer
+          extensions: mbstring, xml, zip
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit
+
+  js:
+    name: JS unit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run checkout.js transport tests
+        run: node --test tests/js/*.test.js
+
+  plugin-check:
+    name: Plugin Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release package from .gitattributes
+        run: |
+          mkdir -p dist
+          git archive --format=zip --prefix=oli-checkout-captcha/ -o dist/oli-checkout-captcha.zip HEAD
+          unzip -q dist/oli-checkout-captcha.zip -d dist
+          test -f dist/oli-checkout-captcha/oli-checkout-captcha.php
+          test ! -e dist/oli-checkout-captcha/.github
+          test ! -e dist/oli-checkout-captcha/tests
+          test ! -e dist/oli-checkout-captcha/composer.json
+
+      - name: Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: './dist/oli-checkout-captcha'
+          slug: oli-checkout-captcha
+          include-experimental: true

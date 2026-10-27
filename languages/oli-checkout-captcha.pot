@@ -2,92 +2,226 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Oli Checkout Captcha 1.1.1\n"
-"Report-Msgid-Bugs-To: https://github.com/olivierbigras/Oli-Checkout-Captcha/issues\n"
-"POT-Creation-Date: 2026-10-21T00:00:00+00:00\n"
+"Project-Id-Version: Oli Checkout Captcha 1.2.7\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/oli-checkout-captcha\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2026-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"POT-Creation-Date: 2026-10-27T15:01:57+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: oli-checkout-captcha\n"
 
-#: includes/class-olic-checkout-captcha.php
-msgid "Settings"
-msgstr ""
-
-#: includes/class-olic-checkout-captcha.php
+#. Plugin Name of the plugin
+#: oli-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:159
+#: includes/class-oli-occ-checkout-captcha.php:160
 msgid "Oli Checkout Captcha"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#. Plugin URI of the plugin
+#: oli-checkout-captcha.php
+msgid "https://github.com/olivierbigras/Oli-Checkout-Captcha"
+msgstr ""
+
+#. Description of the plugin
+#: oli-checkout-captcha.php
+msgid "Blocks bots and card testing at WooCommerce checkout with Google reCAPTCHA v2/v3 or Cloudflare Turnstile. Works with classic and block checkout."
+msgstr ""
+
+#. Author of the plugin
+#: oli-checkout-captcha.php
+msgid "Olivier Bigras"
+msgstr ""
+
+#. Author URI of the plugin
+#: oli-checkout-captcha.php
+msgid "https://github.com/olivierbigras"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:142
+msgid "Settings"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:191
+msgid "Provider"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:198
+msgid "Captcha provider"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:206
 msgid "API keys"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:213
 msgid "Site Key"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:221
 msgid "Secret Key"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:229
+msgid "Verification"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:236
+msgid "reCAPTCHA v3 score threshold"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:244
+msgid "Fail closed"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:252
+msgid "Rate limiting"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:259
+msgid "Limit failed attempts"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:267
+msgid "Maximum failures"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:275
+msgid "Window (seconds)"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:283
+msgid "Appearance"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:290
 msgid "Theme"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:331
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "Add Google reCAPTCHA v2 to your WooCommerce block checkout to prevent spam orders."
+#: includes/class-oli-occ-checkout-captcha.php:336
+msgid "Protect WooCommerce classic and block checkout from bots and card testing. Choose Google reCAPTCHA v2, reCAPTCHA v3, or Cloudflare Turnstile."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "reCAPTCHA is active and protecting your checkout."
+#: includes/class-oli-occ-checkout-captcha.php:339
+msgid "Captcha is active and protecting checkout."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "Please configure your reCAPTCHA API keys below."
+#: includes/class-oli-occ-checkout-captcha.php:341
+msgid "Enter your site key and secret key below to enable checkout protection."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "Keys are stored in the WordPress options table and used only to verify checkout submissions with Google reCAPTCHA."
+#: includes/class-oli-occ-checkout-captcha.php:360
+msgid "Use one provider at a time. Scripts load only on the checkout page."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:373
+msgid "Google reCAPTCHA v2 (checkbox)"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:374
+msgid "Google reCAPTCHA v3 (score)"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:375
+#: includes/class-oli-occ-checkout-captcha.php:422
+msgid "Cloudflare Turnstile"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:398
+msgid "Keys are stored in the WordPress options table and used only to verify checkout submissions with the selected provider. This plugin does not track shoppers."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:417
 msgid "Google reCAPTCHA Admin"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "Get your keys from %s. Use reCAPTCHA v2 \"I'm not a robot\" Checkbox."
+#. translators: 1: Google reCAPTCHA admin link, 2: Cloudflare Turnstile dashboard link
+#: includes/class-oli-occ-checkout-captcha.php:429
+#, php-format
+msgid "Get reCAPTCHA keys from %1$s. Get Turnstile keys from %2$s."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:466
+msgid "Server-side verification runs on classic checkout and WooCommerce Store API (block) checkout."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:481
+msgid "Used only for reCAPTCHA v3. Requests scoring below this value (0.0–1.0) are rejected. Default is 0.5."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:496
+msgid "Block checkout when the captcha provider cannot be reached."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:498
+msgid "When unchecked, a provider outage allows checkout to continue (fail open)."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:509
+msgid "Optional. Failed checkout verifications can be limited per visitor IP. Successful checkouts clear the counter. IPs are hashed before storage."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:524
+msgid "Enable rate limiting of failed captcha attempts."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:554
+msgid "Number of seconds the failure counter is kept. Minimum 60."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:567
 msgid "Light"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:568
 msgid "Dark"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
+#: includes/class-oli-occ-checkout-captcha.php:569
+msgid "Auto (Turnstile only)"
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:582
+msgid "Used for reCAPTCHA v2 and Turnstile widgets. reCAPTCHA v3 is invisible."
+msgstr ""
+
+#: includes/class-oli-occ-checkout-captcha.php:737
 msgid "Oli Checkout Captcha requires WooCommerce to be installed and active."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "reCAPTCHA token"
+#: includes/class-oli-occ-checkout-captcha.php:878
+msgid "Checkout captcha token"
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "Please complete the reCAPTCHA verification."
+#: includes/class-oli-occ-checkout-captcha.php:991
+msgid "Too many failed captcha attempts. Please wait and try again."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "reCAPTCHA verification failed. Please try again."
+#: includes/class-oli-occ-verifier.php:92
+msgid "Please complete the captcha verification."
 msgstr ""
 
-#: includes/class-olic-checkout-captcha.php
-msgid "reCAPTCHA verification failed. Please complete the challenge again."
+#: includes/class-oli-occ-verifier.php:96
+msgid "Captcha is not configured."
+msgstr ""
+
+#: includes/class-oli-occ-verifier.php:121
+msgid "Captcha verification is temporarily unavailable. Please try again."
+msgstr ""
+
+#: includes/class-oli-occ-verifier.php:135
+#: includes/class-oli-occ-verifier.php:176
+#: includes/class-oli-occ-verifier.php:184
+msgid "Captcha verification failed. Please try again."
+msgstr ""
+
+#: includes/class-oli-occ-verifier.php:147
+msgid "Captcha verification failed. Please complete the challenge again."
 msgstr ""

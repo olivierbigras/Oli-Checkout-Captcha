@@ -2,20 +2,20 @@
 /**
  * Minimal WordPress stubs for upgrade and in-place update tests.
  *
- * @package Olic_Checkout_Captcha
+ * @package Oli_OCC_Checkout_Captcha
  */
 
-$GLOBALS['olic_test_options']      = array();
-$GLOBALS['olic_test_site_options'] = array();
-$GLOBALS['olic_test_filters']      = array();
-$GLOBALS['olic_test_actions']      = array();
-$GLOBALS['olic_test_is_multisite'] = true;
+$GLOBALS['oli_occ_test_options']      = array();
+$GLOBALS['oli_occ_test_site_options'] = array();
+$GLOBALS['oli_occ_test_filters']      = array();
+$GLOBALS['oli_occ_test_actions']      = array();
+$GLOBALS['oli_occ_test_is_multisite'] = true;
 
-if ( ! class_exists( 'olic_test_wpdb', false ) ) {
+if ( ! class_exists( 'oli_occ_test_wpdb', false ) ) {
 	/**
 	 * In-memory wpdb stand-in that returns unfiltered option rows.
 	 */
-	class olic_test_wpdb {
+	class oli_occ_test_wpdb {
 		/**
 		 * Options table name.
 		 *
@@ -38,16 +38,44 @@ if ( ! class_exists( 'olic_test_wpdb', false ) ) {
 		 * @return string
 		 */
 		public function prepare( $query, ...$args ) {
-			foreach ( $args as $arg ) {
-				if ( is_int( $arg ) ) {
-					$query = preg_replace( '/%d/', (string) $arg, $query, 1 );
-					continue;
-				}
+			return preg_replace_callback(
+				'/%[sdi]/',
+				static function ( $m ) use ( &$args ) {
+					$arg = array_shift( $args );
+					if ( '%i' === $m[0] ) {
+						return '`' . str_replace( '`', '``', (string) $arg ) . '`';
+					}
+					if ( '%d' === $m[0] ) {
+						return (string) (int) $arg;
+					}
+					return "'" . addslashes( (string) $arg ) . "'";
+				},
+				$query
+			);
+		}
 
-				$query = preg_replace( '/%s/', "'" . addslashes( (string) $arg ) . "'", $query, 1 );
+		/**
+		 * Return option rows matching a LIKE pattern on option_name.
+		 *
+		 * @param string $query  Prepared query.
+		 * @param string $output Output type (ARRAY_A only).
+		 * @return array<int, array<string, mixed>>
+		 */
+		public function get_results( $query, $output = 'ARRAY_A' ) {
+			unset( $output );
+			if ( ! preg_match( "/option_name LIKE '((?:[^'\\\\]|\\\\.)*)'/", $query, $m ) ) {
+				return array();
 			}
-
-			return $query;
+			$rows = array();
+			foreach ( $GLOBALS['oli_occ_test_options'] as $name => $value ) {
+				if ( $this->like_match( $name, stripslashes( $m[1] ) ) ) {
+					$rows[] = array(
+						'option_name'  => $name,
+						'option_value' => maybe_serialize( $value ),
+					);
+				}
+			}
+			return $rows;
 		}
 
 		/**
@@ -59,28 +87,103 @@ if ( ! class_exists( 'olic_test_wpdb', false ) ) {
 		public function get_var( $query ) {
 			if ( preg_match( "/option_name = '([^']+)'/", $query, $matches ) ) {
 				$name = stripslashes( $matches[1] );
-				if ( ! array_key_exists( $name, $GLOBALS['olic_test_options'] ) ) {
+				if ( ! array_key_exists( $name, $GLOBALS['oli_occ_test_options'] ) ) {
 					return null;
 				}
 
-				return maybe_serialize( $GLOBALS['olic_test_options'][ $name ] );
+				return maybe_serialize( $GLOBALS['oli_occ_test_options'][ $name ] );
 			}
 
 			if ( preg_match( "/meta_key = '([^']+)'/", $query, $matches ) ) {
 				$name = stripslashes( $matches[1] );
-				if ( ! array_key_exists( $name, $GLOBALS['olic_test_site_options'] ) ) {
+				if ( ! array_key_exists( $name, $GLOBALS['oli_occ_test_site_options'] ) ) {
 					return null;
 				}
 
-				return maybe_serialize( $GLOBALS['olic_test_site_options'][ $name ] );
+				return maybe_serialize( $GLOBALS['oli_occ_test_site_options'][ $name ] );
 			}
 
 			return null;
 		}
+
+		/**
+		 * Escape LIKE wildcards the same way WordPress does.
+		 *
+		 * @param string $text Raw fragment.
+		 * @return string
+		 */
+		public function esc_like( $text ) {
+			return addcslashes( (string) $text, '_%\\' );
+		}
+
+		/**
+		 * Run a prepared DELETE against the in-memory options table.
+		 *
+		 * @param string $query Prepared SQL.
+		 * @return int Number of deleted rows.
+		 */
+		public function query( $query ) {
+			if ( ! preg_match( '/DELETE FROM\s+(\S+)\s+WHERE\s+(.+)/is', $query, $matches ) ) {
+				return 0;
+			}
+
+			if ( $this->options !== trim( $matches[1], '`' ) ) {
+				return 0;
+			}
+
+			if ( ! preg_match_all( "/option_name LIKE '((?:[^'\\\\]|\\\\.)*)'/", $matches[2], $like_matches ) ) {
+				return 0;
+			}
+
+			$deleted = 0;
+			foreach ( array_keys( $GLOBALS['oli_occ_test_options'] ) as $name ) {
+				foreach ( $like_matches[1] as $pattern ) {
+					if ( $this->like_match( $name, stripslashes( $pattern ) ) ) {
+						unset( $GLOBALS['oli_occ_test_options'][ $name ] );
+						++$deleted;
+						break;
+					}
+				}
+			}
+
+			return $deleted;
+		}
+
+		/**
+		 * Match a value against a SQL LIKE pattern that uses \ as escape.
+		 *
+		 * @param string $value   Option name.
+		 * @param string $pattern LIKE pattern.
+		 * @return bool
+		 */
+		private function like_match( $value, $pattern ) {
+			$regex = '';
+			$length = strlen( $pattern );
+
+			for ( $i = 0; $i < $length; $i++ ) {
+				$char = $pattern[ $i ];
+				if ( '\\' === $char && isset( $pattern[ $i + 1 ] ) ) {
+					$regex .= preg_quote( $pattern[ $i + 1 ], '/' );
+					++$i;
+					continue;
+				}
+				if ( '%' === $char ) {
+					$regex .= '.*';
+					continue;
+				}
+				if ( '_' === $char ) {
+					$regex .= '.';
+					continue;
+				}
+				$regex .= preg_quote( $char, '/' );
+			}
+
+			return (bool) preg_match( '/^' . $regex . '$/', $value );
+		}
 	}
 }
 
-$GLOBALS['wpdb'] = new olic_test_wpdb();
+$GLOBALS['wpdb'] = new oli_occ_test_wpdb();
 
 if ( ! function_exists( 'maybe_serialize' ) ) {
 	/**
@@ -122,9 +225,9 @@ if ( ! function_exists( 'get_option' ) ) {
 	 * @return mixed
 	 */
 	function get_option( $option_name, $default = false ) {
-		$value = array_key_exists( $option_name, $GLOBALS['olic_test_options'] )
-			? $GLOBALS['olic_test_options'][ $option_name ]
-			: $default;
+		$value = array_key_exists( $option_name, $GLOBALS['oli_occ_test_options'] )
+			? $GLOBALS['oli_occ_test_options'][ $option_name ]
+			: apply_filters( 'default_option_' . $option_name, $default, $option_name, true );
 
 		return apply_filters( 'option_' . $option_name, $value, $option_name );
 	}
@@ -139,7 +242,7 @@ if ( ! function_exists( 'update_option' ) ) {
 	 */
 	function update_option( $option_name, $value, $autoload = null ) {
 		unset( $autoload );
-		$GLOBALS['olic_test_options'][ $option_name ] = $value;
+		$GLOBALS['oli_occ_test_options'][ $option_name ] = $value;
 		return true;
 	}
 }
@@ -151,11 +254,11 @@ if ( ! function_exists( 'add_option' ) ) {
 	 * @return bool
 	 */
 	function add_option( $option_name, $value ) {
-		if ( array_key_exists( $option_name, $GLOBALS['olic_test_options'] ) ) {
+		if ( array_key_exists( $option_name, $GLOBALS['oli_occ_test_options'] ) ) {
 			return false;
 		}
 
-		$GLOBALS['olic_test_options'][ $option_name ] = $value;
+		$GLOBALS['oli_occ_test_options'][ $option_name ] = $value;
 		return true;
 	}
 }
@@ -166,7 +269,7 @@ if ( ! function_exists( 'delete_option' ) ) {
 	 * @return bool
 	 */
 	function delete_option( $option_name ) {
-		unset( $GLOBALS['olic_test_options'][ $option_name ] );
+		unset( $GLOBALS['oli_occ_test_options'][ $option_name ] );
 		return true;
 	}
 }
@@ -178,7 +281,7 @@ if ( ! function_exists( 'update_site_option' ) ) {
 	 * @return bool
 	 */
 	function update_site_option( $option_name, $value ) {
-		$GLOBALS['olic_test_site_options'][ $option_name ] = $value;
+		$GLOBALS['oli_occ_test_site_options'][ $option_name ] = $value;
 		return true;
 	}
 }
@@ -193,7 +296,7 @@ if ( ! function_exists( 'add_filter' ) ) {
 	 */
 	function add_filter( $hook, $callback, $priority = 10, $args = 1 ) {
 		unset( $priority, $args );
-		$GLOBALS['olic_test_filters'][ $hook ][] = $callback;
+		$GLOBALS['oli_occ_test_filters'][ $hook ][] = $callback;
 		return true;
 	}
 }
@@ -206,11 +309,11 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	 * @return mixed
 	 */
 	function apply_filters( $hook, $value, ...$args ) {
-		if ( empty( $GLOBALS['olic_test_filters'][ $hook ] ) ) {
+		if ( empty( $GLOBALS['oli_occ_test_filters'][ $hook ] ) ) {
 			return $value;
 		}
 
-		foreach ( $GLOBALS['olic_test_filters'][ $hook ] as $callback ) {
+		foreach ( $GLOBALS['oli_occ_test_filters'][ $hook ] as $callback ) {
 			$value = call_user_func( $callback, $value, ...$args );
 		}
 
@@ -228,7 +331,7 @@ if ( ! function_exists( 'add_action' ) ) {
 	 */
 	function add_action( $hook, $callback, $priority = 10, $args = 1 ) {
 		unset( $priority, $args );
-		$GLOBALS['olic_test_actions'][ $hook ][] = $callback;
+		$GLOBALS['oli_occ_test_actions'][ $hook ][] = $callback;
 		return true;
 	}
 }
@@ -240,11 +343,11 @@ if ( ! function_exists( 'do_action' ) ) {
 	 * @return void
 	 */
 	function do_action( $hook, ...$args ) {
-		if ( empty( $GLOBALS['olic_test_actions'][ $hook ] ) ) {
+		if ( empty( $GLOBALS['oli_occ_test_actions'][ $hook ] ) ) {
 			return;
 		}
 
-		foreach ( $GLOBALS['olic_test_actions'][ $hook ] as $callback ) {
+		foreach ( $GLOBALS['oli_occ_test_actions'][ $hook ] as $callback ) {
 			call_user_func( $callback, ...$args );
 		}
 	}
@@ -266,7 +369,7 @@ if ( ! function_exists( 'is_multisite' ) ) {
 	 * @return bool
 	 */
 	function is_multisite() {
-		return ! empty( $GLOBALS['olic_test_is_multisite'] );
+		return ! empty( $GLOBALS['oli_occ_test_is_multisite'] );
 	}
 }
 
@@ -332,5 +435,467 @@ if ( ! function_exists( 'plugins_url' ) ) {
 	 */
 	function plugins_url( $path = '', $file = '' ) {
 		return rtrim( plugin_dir_url( $file ), '/' ) . '/' . ltrim( (string) $path, '/' );
+	}
+}
+
+$GLOBALS['oli_occ_test_http_requests']  = array();
+$GLOBALS['oli_occ_test_http_response']  = null;
+$GLOBALS['oli_occ_test_transients']     = array();
+
+if ( ! class_exists( 'WP_Error', false ) ) {
+	/**
+	 * Minimal WP_Error stand-in.
+	 */
+	class WP_Error {
+
+		/**
+		 * Error code.
+		 *
+		 * @var string
+		 */
+		public $code = '';
+
+		/**
+		 * Error message.
+		 *
+		 * @var string
+		 */
+		public $message = '';
+
+		/**
+		 * @param string $code    Error code.
+		 * @param string $message Error message.
+		 * @param mixed  $data    Unused.
+		 */
+		public function __construct( $code = '', $message = '', $data = '' ) {
+			unset( $data );
+			$this->code    = (string) $code;
+			$this->message = (string) $message;
+		}
+
+		/**
+		 * @return string
+		 */
+		public function get_error_message() {
+			return $this->message;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * @param mixed $thing Value to test.
+	 * @return bool
+	 */
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_post' ) ) {
+	/**
+	 * @param string               $url  Request URL.
+	 * @param array<string, mixed> $args Request args.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	function wp_remote_post( $url, $args = array() ) {
+		$GLOBALS['oli_occ_test_http_requests'][] = array(
+			'url'  => $url,
+			'args' => $args,
+		);
+
+		if ( is_callable( $GLOBALS['oli_occ_test_http_response'] ) ) {
+			return call_user_func( $GLOBALS['oli_occ_test_http_response'], $url, $args );
+		}
+
+		if ( null === $GLOBALS['oli_occ_test_http_response'] ) {
+			return new WP_Error( 'http_request_failed', 'No mocked HTTP response.' );
+		}
+
+		return $GLOBALS['oli_occ_test_http_response'];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * @param array<string, mixed>|WP_Error $response HTTP response.
+	 * @return string
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) || ! isset( $response['body'] ) ) {
+			return '';
+		}
+
+		return (string) $response['body'];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	/**
+	 * @param array<string, mixed>|WP_Error $response HTTP response.
+	 * @return int
+	 */
+	function wp_remote_retrieve_response_code( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) ) {
+			return 0;
+		}
+
+		if ( isset( $response['response']['code'] ) ) {
+			return (int) $response['response']['code'];
+		}
+
+		return 0;
+	}
+}
+
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'esc_html' ) ) {
+	/**
+	 * @param string $text Text to escape.
+	 * @return string
+	 */
+	function esc_html( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'absint' ) ) {
+	/**
+	 * @param mixed $value Raw value.
+	 * @return int
+	 */
+	function absint( $value ) {
+		return abs( (int) $value );
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	/**
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function esc_html__( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * @param string $value Raw value.
+	 * @return string
+	 */
+	function sanitize_text_field( $value ) {
+		return trim( strip_tags( (string) $value ) );
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * @param mixed $value Value to unslash.
+	 * @return mixed
+	 */
+	function wp_unslash( $value ) {
+		if ( is_string( $value ) ) {
+			return stripslashes( $value );
+		}
+
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'sanitize_key' ) ) {
+	/**
+	 * @param string $key Key.
+	 * @return string
+	 */
+	function sanitize_key( $key ) {
+		$key = strtolower( (string) $key );
+		return preg_replace( '/[^a-z0-9_\-]/', '', $key );
+	}
+}
+
+if ( ! function_exists( 'get_transient' ) ) {
+	/**
+	 * @param string $transient Transient name.
+	 * @return mixed
+	 */
+	function get_transient( $transient ) {
+		return array_key_exists( $transient, $GLOBALS['oli_occ_test_transients'] )
+			? $GLOBALS['oli_occ_test_transients'][ $transient ]
+			: false;
+	}
+}
+
+if ( ! function_exists( 'set_transient' ) ) {
+	/**
+	 * @param string $transient Transient name.
+	 * @param mixed  $value     Value.
+	 * @param int    $expiration Expiration.
+	 * @return bool
+	 */
+	function set_transient( $transient, $value, $expiration = 0 ) {
+		$GLOBALS['oli_occ_test_transients'][ $transient ]                  = $value;
+		$GLOBALS['oli_occ_test_options'][ '_transient_' . $transient ]     = $value;
+		if ( (int) $expiration > 0 ) {
+			$GLOBALS['oli_occ_test_options'][ '_transient_timeout_' . $transient ] = time() + (int) $expiration;
+		}
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * @param string $transient Transient name.
+	 * @return bool
+	 */
+	function delete_transient( $transient ) {
+		unset( $GLOBALS['oli_occ_test_transients'][ $transient ] );
+		unset( $GLOBALS['oli_occ_test_options'][ '_transient_' . $transient ] );
+		unset( $GLOBALS['oli_occ_test_options'][ '_transient_timeout_' . $transient ] );
+		return true;
+	}
+}
+
+$GLOBALS['oli_occ_test_registered_scripts'] = array();
+$GLOBALS['oli_occ_test_enqueued_scripts']   = array();
+$GLOBALS['oli_occ_test_enqueued_styles']    = array();
+$GLOBALS['oli_occ_test_localized_scripts']  = array();
+$GLOBALS['oli_occ_test_is_checkout']        = false;
+$GLOBALS['oli_occ_test_is_order_received']  = false;
+$GLOBALS['oli_occ_test_is_checkout_pay']    = false;
+$GLOBALS['oli_occ_test_has_blocks']         = array();
+$GLOBALS['oli_occ_test_has_blocks_by_page'] = array();
+$GLOBALS['oli_occ_test_checkout_page_id']   = 0;
+
+if ( ! function_exists( 'wp_register_script' ) ) {
+	/**
+	 * @param string           $handle Script handle.
+	 * @param string           $src    Script URL.
+	 * @param array<int, string> $deps Dependencies.
+	 * @param string|bool|null $ver    Version.
+	 * @param bool|array<string, mixed> $args Footer flag or args.
+	 * @return bool
+	 */
+	function wp_register_script( $handle, $src, $deps = array(), $ver = false, $args = false ) {
+		$GLOBALS['oli_occ_test_registered_scripts'][ $handle ] = array(
+			'src'  => $src,
+			'deps' => $deps,
+			'ver'  => $ver,
+			'args' => $args,
+		);
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_script' ) ) {
+	/**
+	 * @param string           $handle Script handle.
+	 * @param string           $src    Script URL.
+	 * @param array<int, string> $deps Dependencies.
+	 * @param string|bool|null $ver    Version.
+	 * @param bool|array<string, mixed> $args Footer flag or args.
+	 * @return void
+	 */
+	function wp_enqueue_script( $handle, $src = '', $deps = array(), $ver = false, $args = false ) {
+		if ( '' !== $src ) {
+			wp_register_script( $handle, $src, $deps, $ver, $args );
+		}
+
+		$GLOBALS['oli_occ_test_enqueued_scripts'][] = $handle;
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_style' ) ) {
+	/**
+	 * @param string           $handle Style handle.
+	 * @param string           $src    Style URL.
+	 * @param array<int, string> $deps Dependencies.
+	 * @param string|bool|null $ver    Version.
+	 * @param string           $media  Media.
+	 * @return void
+	 */
+	function wp_enqueue_style( $handle, $src = '', $deps = array(), $ver = false, $media = 'all' ) {
+		$GLOBALS['oli_occ_test_enqueued_styles'][ $handle ] = array(
+			'src'   => $src,
+			'deps'  => $deps,
+			'ver'   => $ver,
+			'media' => $media,
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_localize_script' ) ) {
+	/**
+	 * @param string               $handle Script handle.
+	 * @param string               $name   JS object name.
+	 * @param array<string, mixed> $data   Data.
+	 * @return bool
+	 */
+	function wp_localize_script( $handle, $name, $data ) {
+		$GLOBALS['oli_occ_test_localized_scripts'][ $handle ] = array(
+			'name' => $name,
+			'data' => $data,
+		);
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_script_is' ) ) {
+	/**
+	 * @param string $handle Script handle.
+	 * @param string $list   Queue to check.
+	 * @return bool
+	 */
+	function wp_script_is( $handle, $list = 'enqueued' ) {
+		if ( 'registered' === $list ) {
+			return isset( $GLOBALS['oli_occ_test_registered_scripts'][ $handle ] );
+		}
+
+		if ( 'enqueued' === $list ) {
+			return in_array( $handle, $GLOBALS['oli_occ_test_enqueued_scripts'], true );
+		}
+
+		return false;
+	}
+}
+
+if ( ! function_exists( 'is_checkout' ) ) {
+	/**
+	 * @return bool
+	 */
+	function is_checkout() {
+		return ! empty( $GLOBALS['oli_occ_test_is_checkout'] );
+	}
+}
+
+if ( ! function_exists( 'is_order_received_page' ) ) {
+	/**
+	 * @return bool
+	 */
+	function is_order_received_page() {
+		return ! empty( $GLOBALS['oli_occ_test_is_order_received'] );
+	}
+}
+
+if ( ! function_exists( 'is_checkout_pay_page' ) ) {
+	/**
+	 * @return bool
+	 */
+	function is_checkout_pay_page() {
+		return ! empty( $GLOBALS['oli_occ_test_is_checkout_pay'] );
+	}
+}
+
+if ( ! function_exists( 'has_block' ) ) {
+	/**
+	 * @param string     $block_name Block name.
+	 * @param int|object $post       Optional post.
+	 * @return bool
+	 */
+	function has_block( $block_name, $post = null ) {
+		$blocks = isset( $GLOBALS['oli_occ_test_has_blocks'] ) && is_array( $GLOBALS['oli_occ_test_has_blocks'] )
+			? $GLOBALS['oli_occ_test_has_blocks']
+			: array();
+
+		if ( null === $post || 0 === $post ) {
+			return in_array( $block_name, $blocks, true );
+		}
+
+		$page_blocks = isset( $GLOBALS['oli_occ_test_has_blocks_by_page'][ (int) $post ] )
+			? $GLOBALS['oli_occ_test_has_blocks_by_page'][ (int) $post ]
+			: array();
+
+		return in_array( $block_name, $page_blocks, true );
+	}
+}
+
+if ( ! function_exists( 'wc_get_page_id' ) ) {
+	/**
+	 * @param string $page Page slug.
+	 * @return int
+	 */
+	function wc_get_page_id( $page ) {
+		if ( 'checkout' === $page ) {
+			return (int) $GLOBALS['oli_occ_test_checkout_page_id'];
+		}
+
+		return 0;
+	}
+}
+
+if ( ! defined( 'ARRAY_A' ) ) {
+	define( 'ARRAY_A', 'ARRAY_A' );
+}
+
+if ( ! function_exists( 'wp_cache_delete' ) ) {
+	/**
+	 * No-op object cache delete.
+	 *
+	 * @param string $key   Cache key.
+	 * @param string $group Cache group.
+	 * @return bool
+	 */
+	function wp_cache_delete( $key, $group = '' ) {
+		unset( $key, $group );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_verify_nonce' ) ) {
+	/**
+	 * Test nonce check: "valid-{action}" is the only accepted value.
+	 *
+	 * @param string $nonce  Nonce.
+	 * @param string $action Action.
+	 * @return int|false
+	 */
+	function wp_verify_nonce( $nonce, $action = -1 ) {
+		return ( 'valid-' . $action === $nonce ) ? 1 : false;
+	}
+}
+
+if ( ! function_exists( 'has_filter' ) ) {
+	/**
+	 * Whether a callback is attached to a hook.
+	 *
+	 * @param string $hook Hook name.
+	 * @return bool
+	 */
+	function has_filter( $hook ) {
+		return ! empty( $GLOBALS['oli_occ_test_filters'][ $hook ] );
+	}
+}
+
+if ( ! function_exists( 'apply_filters_deprecated' ) ) {
+	/**
+	 * Apply a deprecated filter and record the notice.
+	 *
+	 * @param string $hook        Hook name.
+	 * @param array  $args        Arguments.
+	 * @param string $version     Version.
+	 * @param string $replacement Replacement hook.
+	 * @return mixed
+	 */
+	function apply_filters_deprecated( $hook, $args, $version, $replacement = '' ) {
+		if ( ! has_filter( $hook ) ) {
+			return $args[0];
+		}
+		$GLOBALS['oli_occ_test_deprecated'][] = array( $hook, $version, $replacement );
+		return apply_filters( $hook, ...$args );
 	}
 }
